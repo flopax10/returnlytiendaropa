@@ -1,12 +1,12 @@
 :root {
-  --fondo: #1e3a8a;
-  --texto: #ffffff;
-  --suave: #c7d2fe;
-  --borde: rgba(255, 255, 255, 0.25);
+  --fondo: #ffffff;
+  --texto: #1d1d1f;
+  --suave: #6e6e73;
+  --borde: #e5e3de;
   --panel: #f1efea;
-  --acento: #ffffff;
-  --ok: #86efac;
-  --error: #fecaca;
+  --acento: #1d1d1f;
+  --ok: #2e7d5b;
+  --error: #b3261e;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: var(--texto);
   background: var(--fondo);
@@ -48,10 +48,10 @@ img { display: block; max-width: 100%; }
 .precio { font-size: 1.2rem; margin: 0 0 1.5rem; }
 .etiqueta { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; margin: 1.5rem 0 .5rem; }
 .opciones { display: flex; flex-wrap: wrap; gap: .5rem; }
-.opcion { border: 1px solid var(--borde); background: none; color: inherit; padding: .55rem .9rem; min-width: 3rem; cursor: pointer; font: inherit; }
-.opcion.activa { border-color: var(--texto); background: var(--texto); color: var(--fondo); }
+.opcion { border: 1px solid var(--borde); background: none; padding: .55rem .9rem; min-width: 3rem; cursor: pointer; font: inherit; }
+.opcion.activa { border-color: var(--texto); background: var(--texto); color: #fff; }
 
-.boton { display: inline-block; margin-top: 1.8rem; background: var(--acento); color: var(--fondo); border: 1px solid var(--acento); padding: .85rem 1.8rem; font: inherit; font-size: .9rem; cursor: pointer; text-decoration: none; }
+.boton { display: inline-block; margin-top: 1.8rem; background: var(--acento); color: #fff; border: 1px solid var(--acento); padding: .85rem 1.8rem; font: inherit; font-size: .9rem; cursor: pointer; text-decoration: none; }
 .boton:disabled { opacity: .45; cursor: default; }
 .boton.secundario { background: none; color: var(--texto); margin: 0; padding: .55rem 1rem; }
 .link { background: none; border: none; font: inherit; text-decoration: underline; cursor: pointer; color: var(--suave); margin-top: 1rem; }
@@ -63,7 +63,7 @@ img { display: block; max-width: 100%; }
 .fila-info a { text-decoration: none; }
 .fila-precio { min-width: 90px; text-align: right; }
 .cantidad { display: flex; align-items: center; gap: .6rem; }
-.cantidad button { width: 28px; height: 28px; border: 1px solid var(--borde); background: none; color: inherit; cursor: pointer; }
+.cantidad button { width: 28px; height: 28px; border: 1px solid var(--borde); background: none; cursor: pointer; }
 .resumen { display: flex; justify-content: space-between; font-size: 1.1rem; padding: 1.2rem 0 .5rem; }
 
 .formulario { display: flex; flex-direction: column; gap: 1rem; max-width: 380px; margin: 0 auto; }
@@ -77,7 +77,7 @@ img { display: block; max-width: 100%; }
 .pedido { border: 1px solid var(--borde); padding: 1rem 1.2rem .2rem; margin-bottom: 1.2rem; }
 .pedido-cabezal { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .pedido .fila:last-child { border-bottom: none; }
-.etiqueta-devuelto { font-size: .75rem; background: var(--panel); color: #1d1d1f; padding: .25rem .6rem; }
+.etiqueta-devuelto { font-size: .75rem; background: var(--panel); padding: .25rem .6rem; }
 
 .devoluciones { max-width: 520px; margin: auto; }
 .devoluciones .formulario { margin: 2rem 0 0; }
