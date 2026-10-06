@@ -5,7 +5,6 @@ import Producto from './pages/Producto.jsx';
 import Carrito from './pages/Carrito.jsx';
 import Ingresar from './pages/Ingresar.jsx';
 import Perfil from './pages/Perfil.jsx';
-import Devoluciones from './pages/Devoluciones.jsx';
 
 export const CATEGORIAS = ['Remeras', 'Pantalones', 'Vestidos', 'Championes', 'Accesorios'];
 
@@ -25,9 +24,7 @@ export default function App() {
         </div>
         <nav className="menu">
           <NavLink to="/" end>Todo</NavLink>
-          {CATEGORIAS.map((c) => <NavLink key={c} to={`/categoria/${c}`}>{c}</NavLink>)}
-          <NavLink to="/devoluciones">Devoluciones</NavLink>
-        </nav>
+          {CATEGORIAS.map((c) => <NavLink key={c} to={`/categoria/${c}`}>{c}</NavLink>)}        </nav>
       </header>
 
       <main className="contenido">
@@ -37,9 +34,7 @@ export default function App() {
           <Route path="/producto/:id" element={<Producto />} />
           <Route path="/carrito" element={<Carrito />} />
           <Route path="/ingresar" element={<Ingresar />} />
-          <Route path="/perfil" element={<Perfil />} />
-          <Route path="/devoluciones" element={<Devoluciones />} />
-          <Route path="*" element={<p>Página no encontrada. <Link to="/">Volver a la tienda</Link></p>} />
+          <Route path="/perfil" element={<Perfil />} />          <Route path="*" element={<p>Página no encontrada. <Link to="/">Volver a la tienda</Link></p>} />
         </Routes>
       </main>
 

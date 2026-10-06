@@ -79,13 +79,9 @@ img { display: block; max-width: 100%; }
 .pedido .fila:last-child { border-bottom: none; }
 .etiqueta-devuelto { font-size: .75rem; background: var(--panel); padding: .25rem .6rem; }
 
-.devoluciones { max-width: 520px; margin: auto; }
-.devoluciones .formulario { margin: 2rem 0 0; }
 
 @media (max-width: 700px) {
   .producto { grid-template-columns: 1fr; gap: 1.5rem; }
   .grilla { grid-template-columns: repeat(2, 1fr); gap: 1.5rem 1rem; }
   .tarjeta-info { flex-direction: column; }
 }
-.devoluciones h2 { margin-top: 2.5rem; font-size: 1.1rem; }
-.motivos { padding-left: 1.2rem; line-height: 1.9; }
