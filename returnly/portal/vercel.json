@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/:ruta*", "destination": "https://returnly-backend.vercel.app/api/:ruta*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
