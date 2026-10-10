@@ -1,0 +1,4 @@
+.claude/
+# Copia local de un .env con secretos: nunca se sube
+BACKEND.txt
+*.env.txt

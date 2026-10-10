@@ -1,0 +1,16 @@
+{
+  "name": "returnly-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch-path=./src --env-file-if-exists=.env src/index.js",
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "estimar": "node --env-file-if-exists=.env scripts/estimar.js",
+    "migrar": "node --env-file-if-exists=.env scripts/migrar.js"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^9.1.0",
+    "@supabase/supabase-js": "^2.117.3",
+    "express": "^5.2.1"
+  }
+}

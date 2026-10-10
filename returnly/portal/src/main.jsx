@@ -1,10 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Motivos from './pages/Motivos.jsx'
+import App from './App.jsx'
 import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Motivos />
+    <App />
   </React.StrictMode>
 )
