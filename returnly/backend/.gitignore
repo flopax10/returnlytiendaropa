@@ -1,3 +1,6 @@
 node_modules
+# Archivos con claves: nunca se suben (solo el ejemplo)
 .env
+.env.*
+!.env.example
 .cache
