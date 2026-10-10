@@ -10,6 +10,20 @@ function Estado({ ok, si, no }) {
   return <span className={`estado ${ok ? 'estado-ok' : 'estado-mal'}`}><span aria-hidden="true">{ok ? '●' : '■'}</span> {ok ? si : no}</span>
 }
 
+// Botón que pide confirmación en la misma página: primer clic muestra "¿Seguro? Sí / No".
+// (No se usa confirm() del navegador porque algunos navegadores lo bloquean sin avisar.)
+function BotonConfirmar({ texto, pregunta, onConfirmar }) {
+  const [preguntando, setPreguntando] = useState(false)
+  if (!preguntando) return <button className="boton-vista" onClick={() => setPreguntando(true)}>{texto}</button>
+  return (
+    <span className="confirmar" role="group" aria-label={pregunta}>
+      <span className="confirmar-pregunta">{pregunta}</span>
+      <button className="boton-vista boton-si" onClick={() => { setPreguntando(false); onConfirmar() }}>Sí</button>
+      <button className="boton-vista" onClick={() => setPreguntando(false)}>No</button>
+    </span>
+  )
+}
+
 // Contraseña temporal: se muestra una sola vez para pasársela a la persona
 function AvisoPassword({ aviso, onCerrar }) {
   if (!aviso) return null
@@ -128,7 +142,6 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
     : `La conexión de "${empresa.nombre}" falló: ${r.error}`))
 
   const cambiarEstado = (empresa) => {
-    if (empresa.activa && !confirm(`¿Dar de baja "${empresa.nombre}"? Sus usuarios no van a poder entrar. Se puede reactivar.`)) return
     accion(() => api(`/admin/empresas/${empresa.id}`, { body: { activa: !empresa.activa }, method: 'PATCH' }),
       `"${empresa.nombre}" ${empresa.activa ? 'dada de baja' : 'reactivada'}.`)
   }
@@ -156,7 +169,9 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
                       <input type="file" accept=".json,application/json" onChange={cargarKey(e)} hidden />
                     </label>
                     <button className="boton-vista" onClick={() => probar(e)} disabled={!e.tieneCredencial}>Probar conexión</button>
-                    <button className="boton-vista" onClick={() => cambiarEstado(e)}>{e.activa ? 'Dar de baja' : 'Reactivar'}</button>
+                    {e.activa
+                      ? <BotonConfirmar texto="Dar de baja" pregunta="¿Seguro? Sus usuarios no van a poder entrar." onConfirmar={() => cambiarEstado(e)} />
+                      : <button className="boton-vista" onClick={() => cambiarEstado(e)}>Reactivar</button>}
                   </td>
                 </tr>
               ))}
@@ -205,7 +220,6 @@ function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
     }
   }
   const resetear = async (u) => {
-    if (!confirm(`¿Generar una contraseña nueva para "${u.usuario}"? La actual deja de funcionar.`)) return
     const r = await accion(() => api(`/admin/usuarios/${u.id}/resetear-password`, { body: {} }), 'Contraseña reseteada.')
     if (r) setAviso({ usuario: u.usuario, password: r.passwordTemporal })
   }
@@ -228,7 +242,7 @@ function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
                   <td><Estado ok={u.activo} si="Activo" no="Bloqueado" /></td>
                   <td>{fecha(u.ultimo_acceso)}</td>
                   <td className="acciones-fila">
-                    <button className="boton-vista" onClick={() => resetear(u)}>Resetear contraseña</button>
+                    <BotonConfirmar texto="Resetear contraseña" pregunta="¿Seguro? La actual deja de funcionar." onConfirmar={() => resetear(u)} />
                     {u.id !== yo.id && <button className="boton-vista" onClick={() => bloquear(u)}>{u.activo ? 'Bloquear' : 'Desbloquear'}</button>}
                   </td>
                 </tr>

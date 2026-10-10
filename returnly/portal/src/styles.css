@@ -221,3 +221,6 @@ label.boton-vista { display: inline-block; }
 .dialogo { border: 1px solid var(--borde); border-radius: 12px; background: var(--superficie); color: var(--texto); padding: 24px; width: min(420px, calc(100vw - 32px)); }
 .dialogo::backdrop { background: rgba(0, 0, 0, .4); }
 .correo { word-break: break-all; display: inline-block; max-width: 220px; }
+.confirmar { display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid var(--borde); border-radius: 6px; }
+.confirmar-pregunta { font-size: .8rem; color: var(--texto-2); }
+.boton-si { color: #fff; background: #d03b3b; border-color: #d03b3b; }
