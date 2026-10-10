@@ -26,12 +26,25 @@ function BotonConfirmar({ texto, pregunta, onConfirmar }) {
 
 // Contraseña temporal: se muestra una sola vez para pasársela a la persona
 function AvisoPassword({ aviso, onCerrar }) {
+  const [copiada, setCopiada] = useState(false)
   if (!aviso) return null
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(aviso.password)
+      setCopiada(true)
+    } catch {
+      setCopiada(null) // el navegador no deja copiar: hay que seleccionarla a mano
+    }
+  }
   return (
     <div className="aviso aviso-password" role="status">
-      <p><strong>Contraseña temporal de "{aviso.usuario}":</strong> <code>{aviso.password}</code></p>
+      <p>
+        <strong>Contraseña temporal de "{aviso.usuario}":</strong> <code>{aviso.password}</code>{' '}
+        <button className="boton-vista" onClick={copiar}>{copiada ? 'Copiada ✓' : 'Copiar'}</button>
+      </p>
+      {copiada === null && <p>Tu navegador no deja copiar automáticamente: seleccioná la contraseña con el mouse y copiala con Ctrl + C.</p>}
       <p>Copiala y pasásela por un medio seguro. <strong>No se va a volver a mostrar.</strong> La persona puede cambiarla desde "Cambiar contraseña".</p>
-      <button className="boton-vista" onClick={onCerrar}>Ya la copié</button>
+      <button className="boton-vista" onClick={() => { setCopiada(false); onCerrar() }}>Ya la copié</button>
     </div>
   )
 }

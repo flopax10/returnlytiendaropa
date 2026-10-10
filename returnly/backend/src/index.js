@@ -31,7 +31,8 @@ app.post('/api/login', async (req, res) => {
   const { usuario: ingresado, password } = req.body ?? {};
   const acceso = { usuario_ingresado: ingresado, ip, user_agent: req.get('user-agent') };
   const usuario = await usuarioParaLogin(ingresado);
-  const passwordOk = usuario && verificarPassword(String(password ?? ''), usuario.password_hash);
+  // Se ignoran espacios al principio y al final (pasa mucho al copiar y pegar la contraseña)
+  const passwordOk = usuario && verificarPassword(String(password ?? '').trim(), usuario.password_hash);
   const empresa = passwordOk && usuario.empresa_id ? await empresaPorId(usuario.empresa_id) : null;
 
   let motivo = null;
@@ -67,13 +68,14 @@ app.get('/api/sesion', requiereSesion, async (req, res) => {
 
 // Cambiar la propia contraseña (pide la actual)
 app.post('/api/cambiar-password', requiereSesion, async (req, res) => {
-  const { actual, nueva } = req.body ?? {};
-  if (String(nueva ?? '').length < 10) return res.status(400).json({ error: 'La contraseña nueva tiene que tener al menos 10 caracteres' });
+  const actual = String(req.body?.actual ?? '').trim();
+  const nueva = String(req.body?.nueva ?? '').trim();
+  if (nueva.length < 10) return res.status(400).json({ error: 'La contraseña nueva tiene que tener al menos 10 caracteres' });
   const completo = await usuarioParaLogin(req.usuario.usuario);
-  if (!verificarPassword(String(actual ?? ''), completo.password_hash)) {
+  if (!verificarPassword(actual, completo.password_hash)) {
     return res.status(400).json({ error: 'La contraseña actual no es correcta' });
   }
-  await actualizarUsuario(req.usuario.id, { password_hash: hashPassword(String(nueva)) });
+  await actualizarUsuario(req.usuario.id, { password_hash: hashPassword(nueva) });
   res.json({ ok: true });
 });
 
