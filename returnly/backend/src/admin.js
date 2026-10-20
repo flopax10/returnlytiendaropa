@@ -6,7 +6,7 @@ import {
   listarEmpresas, empresaPorId, crearEmpresa, actualizarEmpresa, guardarCredencial, publicaEmpresa,
   listarUsuarios, usuarioPorId, crearUsuario, actualizarUsuario, listarAccesos,
 } from './empresas.js';
-import { probarConexion, borrarCache } from './datos.js';
+import { probarConexion, borrarCache, actualizarDatos } from './datos.js';
 import { TIPOS } from './fuentes/index.js';
 
 export const adminRouter = Router();
@@ -108,6 +108,18 @@ adminRouter.post('/empresas/:id/probar', async (req, res) => {
   if (!empresa) return error(res, 404, 'Empresa no encontrada');
   try {
     res.json(await probarConexion(empresa));
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// Trae los datos de la empresa ya (sin esperar a la actualización diaria)
+adminRouter.post('/empresas/:id/actualizar', async (req, res) => {
+  const empresa = await empresaPorId(req.params.id);
+  if (!empresa) return error(res, 404, 'Empresa no encontrada');
+  try {
+    const { actualizado } = await actualizarDatos(empresa);
+    res.json({ ok: true, actualizado });
   } catch (e) {
     res.json({ ok: false, error: e.message });
   }

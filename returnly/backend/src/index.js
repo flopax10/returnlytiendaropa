@@ -2,7 +2,7 @@
 import express from 'express';
 import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereSesion } from './auth.js';
 import { usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso } from './empresas.js';
-import { obtenerDatos } from './datos.js';
+import { obtenerDatos, actualizarTodas } from './datos.js';
 import { adminRouter } from './admin.js';
 
 const app = express();
@@ -87,6 +87,14 @@ app.get('/api/datos', requiereSesion, async (req, res) => {
   if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
   const { actualizado, datos } = await obtenerDatos(empresa);
   res.json({ empresa: publicaEmpresa(empresa), actualizado, datos });
+});
+
+// Actualización diaria automática: Vercel Cron llama a esta ruta (ver vercel.json) con el header
+// "Authorization: Bearer <CRON_SECRET>". Trae de nuevo los datos de todas las empresas activas.
+app.get('/api/cron/actualizar', async (req, res) => {
+  const secreto = process.env.CRON_SECRET;
+  if (!secreto || req.get('authorization') !== `Bearer ${secreto}`) return res.status(401).json({ error: 'No autorizado' });
+  res.json({ resultados: await actualizarTodas() });
 });
 
 app.use('/api/admin', adminRouter);

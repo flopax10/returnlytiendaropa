@@ -1,15 +1,11 @@
 // Trae los datos de una empresa desde BigQuery usando SU clave (según el tipo de fuente que tenga: GA4,
-// TheLook...) y los guarda en caché para no gastar cuota en cada visita al panel.
+// TheLook...) y guarda una foto en Supabase (tabla datos_empresa). Esa foto se renueva sola todos los días
+// (Vercel Cron -> /api/cron/actualizar) o cuando el admin toca "Actualizar ahora". El panel lee la foto.
 import { BigQuery } from '@google-cloud/bigquery';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { fuenteDe } from './fuentes/index.js';
-import { credencialDe } from './empresas.js';
+import { credencialDe, listarEmpresas } from './empresas.js';
+import { db, q } from './db.js';
 
-const VIGENCIA_MS = 24 * 3600 * 1000;
-// En Vercel solo se puede escribir en /tmp
-const CARPETA_CACHE = process.env.VERCEL ? join(tmpdir(), 'returnly-cache') : new URL('../.cache/', import.meta.url);
 const enCurso = new Map(); // evita correr las mismas consultas dos veces a la vez
 
 // Cliente de BigQuery con la KEY de la empresa (guardada encriptada en Supabase)
@@ -23,35 +19,47 @@ async function consultarBigQuery(empresa) {
   const { consultas, etiquetas } = fuenteDe(empresa);
   const lista = Object.entries(consultas);
   const resultados = await Promise.all(lista.map(([, query]) => bq.query({ query, location: 'US' }).then(([filas]) => filas)));
-  return { ...Object.fromEntries(lista.map(([nombre], i) => [nombre, resultados[i]])), etiquetas };
+  // JSON ida y vuelta: convierte fechas y números de BigQuery a valores simples para guardarlos en jsonb
+  return JSON.parse(JSON.stringify({ ...Object.fromEntries(lista.map(([nombre], i) => [nombre, resultados[i]])), etiquetas }));
 }
 
-const archivoCache = (empresa) =>
-  typeof CARPETA_CACHE === 'string' ? join(CARPETA_CACHE, `${empresa.id}.json`) : new URL(`${empresa.id}.json`, CARPETA_CACHE);
+const fotoDe = async (empresa) =>
+  (await q(db.from('datos_empresa').select('datos, actualizado').eq('empresa_id', empresa.id).limit(1)))[0];
 
-async function leerCache(empresa) {
-  try {
-    const guardado = JSON.parse(await readFile(archivoCache(empresa), 'utf8'));
-    if (Date.now() - guardado.actualizado < VIGENCIA_MS) return guardado;
-  } catch {
-    // no hay caché o está rota: se consulta de nuevo
-  }
-  return null;
-}
-
-// Devuelve { actualizado, datos } con los resultados de todas las consultas
-export async function obtenerDatos(empresa) {
-  const cache = await leerCache(empresa);
-  if (cache) return cache;
+// Consulta BigQuery y guarda la foto nueva. Si falla, se conserva la foto anterior y se anota el error.
+export function actualizarDatos(empresa) {
   if (!enCurso.has(empresa.id)) {
     enCurso.set(empresa.id, (async () => {
-      const nuevo = { actualizado: Date.now(), datos: await consultarBigQuery(empresa) };
-      await mkdir(CARPETA_CACHE, { recursive: true });
-      await writeFile(archivoCache(empresa), JSON.stringify(nuevo));
-      return nuevo;
+      const ahora = new Date().toISOString();
+      try {
+        const datos = await consultarBigQuery(empresa);
+        await q(db.from('datos_empresa').upsert({ empresa_id: empresa.id, datos, actualizado: ahora, ultimo_intento: ahora, error: null }));
+        return { actualizado: Date.parse(ahora), datos };
+      } catch (e) {
+        await q(db.from('datos_empresa').upsert({ empresa_id: empresa.id, ultimo_intento: ahora, error: e.message.slice(0, 500) }));
+        throw e;
+      }
     })().finally(() => enCurso.delete(empresa.id)));
   }
   return enCurso.get(empresa.id);
+}
+
+// Devuelve { actualizado, datos } para el panel. Si la empresa todavía no tiene foto, la trae en el momento.
+export async function obtenerDatos(empresa) {
+  const foto = await fotoDe(empresa);
+  if (foto?.datos) return { actualizado: Date.parse(foto.actualizado), datos: foto.datos };
+  return actualizarDatos(empresa);
+}
+
+// Actualiza todas las empresas activas con KEY cargada (lo llama el cron diario). Una que falla no frena al resto.
+export async function actualizarTodas() {
+  const empresas = (await listarEmpresas()).filter((e) => e.activa && e.credencial_cifrada);
+  const resultados = await Promise.allSettled(empresas.map(actualizarDatos));
+  return empresas.map((e, i) => ({
+    empresa: e.id,
+    ok: resultados[i].status === 'fulfilled',
+    ...(resultados[i].status === 'rejected' && { error: resultados[i].reason.message }),
+  }));
 }
 
 // Prueba la conexión de una empresa sin gastar cuota: valida la KEY y las consultas con un "dry run"
@@ -66,8 +74,7 @@ export async function probarConexion(empresa) {
   return { ok: true, gbPorActualizacion: Math.round((bytes / 1024 ** 3) * 10) / 10 };
 }
 
-// Borra la caché de una empresa (por ejemplo, al cambiarle la KEY o la fuente)
+// Borra la foto de una empresa (por ejemplo, al cambiarle la KEY o la fuente): la próxima visita la trae de nuevo
 export async function borrarCache(empresa) {
-  const { rm } = await import('node:fs/promises');
-  await rm(archivoCache(empresa), { force: true });
+  await q(db.from('datos_empresa').delete().eq('empresa_id', empresa.id));
 }

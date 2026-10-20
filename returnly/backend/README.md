@@ -11,7 +11,7 @@ Panel (returnly/portal) ──/api──> este backend ──> Supabase (empresa
 ## Cómo levantarlo
 
 ```bash
-cp .env.example .env     # completá SESSION_SECRET, SUPABASE_SECRET_KEY y CREDENCIALES_KEY
+cp .env.example .env     # completá SESSION_SECRET, SUPABASE_SECRET_KEY, CREDENCIALES_KEY y CRON_SECRET
 npm install
 npm start                # http://localhost:3002
 ```
@@ -56,11 +56,22 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 - Cada intento de ingreso (bueno o fallido, con motivo, IP y navegador) queda en la tabla `acceso`.
 - El cliente nunca puede pedir datos de otra empresa: el backend usa siempre la empresa de su usuario.
 
-## Datos y costo
+## Actualización automática de los datos
 
-- La primera vez que se abre el panel de una empresa se corren sus consultas (unos 8 GB para Google, 1,5 GB
-  para TheLook). El resultado queda en caché 24 horas (`.cache/`).
-- `npm run estimar` calcula cuánto leería cada empresa sin gastar cuota (lo mismo que "Probar conexión" en el admin).
+Los datos de cada empresa se guardan como una "foto" en Supabase (tabla `datos_empresa`, SQL en
+`returnly/supabase/004_datos_empresa.sql`). El panel lee esa foto, así que abre al instante.
+
+- **Todos los días a las 04:00 de Uruguay** Vercel Cron llama a `/api/cron/actualizar` (configurado en
+  `vercel.json`). Esa ruta vuelve a consultar BigQuery para cada empresa activa con KEY y guarda la foto nueva.
+  Si una falla, se conserva su foto anterior y el error queda a la vista en el admin.
+- **Actualizar ahora:** botón en el admin para traer los datos de una empresa en el momento.
+- **Empresa nueva:** la primera vez que se abre su panel se traen los datos en el momento; después entra en la
+  actualización diaria.
+- La ruta del cron está protegida con `CRON_SECRET` (variable de entorno en Vercel). Vercel la manda sola en el
+  header `Authorization`.
+
+Costo: cada actualización lee unos 8 GB para Google y 1,5 GB para TheLook. Una por día queda dentro de la cuota
+gratis de BigQuery (1 TB por mes). `npm run estimar` calcula cuánto leería cada empresa sin gastar cuota.
 
 ## API
 
@@ -74,6 +85,8 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | GET/POST/PATCH | `/api/admin/empresas` | admin | Listar, crear, editar, dar de baja empresas |
 | PUT | `/api/admin/empresas/:id/credencial` | admin | Cargar o reemplazar la KEY (se encripta y se prueba) |
 | POST | `/api/admin/empresas/:id/probar` | admin | Probar la conexión sin gastar cuota |
+| POST | `/api/admin/empresas/:id/actualizar` | admin | Traer los datos de la empresa ya |
+| GET | `/api/cron/actualizar` | Vercel Cron (`CRON_SECRET`) | Actualización diaria de todas las empresas |
 | GET/POST/PATCH | `/api/admin/usuarios` | admin | Listar, crear, bloquear usuarios |
 | POST | `/api/admin/usuarios/:id/resetear-password` | admin | Generar una contraseña temporal nueva |
 | GET | `/api/admin/accesos` | admin | Registro de los últimos 200 ingresos |

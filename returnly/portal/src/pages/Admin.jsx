@@ -10,6 +10,16 @@ function Estado({ ok, si, no }) {
   return <span className={`estado ${ok ? 'estado-ok' : 'estado-mal'}`}><span aria-hidden="true">{ok ? '●' : '■'}</span> {ok ? si : no}</span>
 }
 
+// Cuándo se actualizaron por última vez los datos de la empresa (se renuevan solos todos los días)
+const fechaCorta = (f) => new Date(f).toLocaleString('es-UY', { dateStyle: 'short', timeStyle: 'short' })
+function Datos({ info }) {
+  if (!info?.actualizado && !info?.error) return <span className="muted">Todavía no se trajeron</span>
+  return <>
+    {info.actualizado && <Estado ok si={`Al día: ${fechaCorta(info.actualizado)}`} />}
+    {info.error && <><br /><Estado no={`Falló el ${fechaCorta(info.ultimo_intento)}`} /><br /><span className="muted">{info.error}</span></>}
+  </>
+}
+
 // Botón que pide confirmación en la misma página: primer clic muestra "¿Seguro? Sí / No".
 // (No se usa confirm() del navegador porque algunos navegadores lo bloquean sin avisar.)
 function BotonConfirmar({ texto, pregunta, onConfirmar }) {
@@ -154,6 +164,10 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
     ? `Conexión de "${empresa.nombre}" OK: ${r.gbPorActualizacion} GB por actualización.`
     : `La conexión de "${empresa.nombre}" falló: ${r.error}`))
 
+  const actualizar = (empresa) => accion(() => api(`/admin/empresas/${empresa.id}/actualizar`, { body: {} }), (r) => (r.ok
+    ? `Datos de "${empresa.nombre}" actualizados.`
+    : `No se pudieron actualizar los datos de "${empresa.nombre}": ${r.error}`))
+
   const cambiarEstado = (empresa) => {
     accion(() => api(`/admin/empresas/${empresa.id}`, { body: { activa: !empresa.activa }, method: 'PATCH' }),
       `"${empresa.nombre}" ${empresa.activa ? 'dada de baja' : 'reactivada'}.`)
@@ -165,7 +179,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
         <header className="tarjeta-cabezal"><div><h2>Empresas</h2><p className="subtitulo">Tiendas clientes de Returnly y la conexión a sus datos</p></div></header>
         <div className="tabla-scroll">
           <table className="tabla">
-            <thead><tr><th>Empresa</th><th>Fuente</th><th>KEY de Google</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Empresa</th><th>Fuente</th><th>KEY de Google</th><th>Datos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {empresas.map((e) => (
                 <tr key={e.id}>
@@ -174,6 +188,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
                   <td>{e.tieneCredencial
                     ? <><Estado ok si="Cargada (encriptada)" /><br /><span className="muted correo">{e.credencial_email}</span></>
                     : <Estado no="Sin KEY cargada" />}</td>
+                  <td><Datos info={e.datos_empresa} /></td>
                   <td><Estado ok={e.activa} si="Activa" no="Dada de baja" /></td>
                   <td className="acciones-fila">
                     <button className="boton-vista" onClick={() => onVerPanel(e)} disabled={!e.tieneCredencial}>Ver panel</button>
@@ -182,6 +197,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
                       <input type="file" accept=".json,application/json" onChange={cargarKey(e)} hidden />
                     </label>
                     <button className="boton-vista" onClick={() => probar(e)} disabled={!e.tieneCredencial}>Probar conexión</button>
+                    <button className="boton-vista" onClick={() => actualizar(e)} disabled={!e.tieneCredencial}>Actualizar ahora</button>
                     {e.activa
                       ? <BotonConfirmar texto="Dar de baja" pregunta="¿Seguro? Sus usuarios no van a poder entrar." onConfirmar={() => cambiarEstado(e)} />
                       : <button className="boton-vista" onClick={() => cambiarEstado(e)}>Reactivar</button>}
