@@ -121,17 +121,52 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
 
 // ---- Empresas ----
 
+// Nombre de la empresa: si tiene web, es un link que abre la tienda en otra pestaña
+function NombreEmpresa({ empresa }) {
+  return (
+    <>
+      {empresa.web
+        ? <a className="link-web" href={empresa.web} target="_blank" rel="noopener noreferrer" title={`Abrir ${empresa.web}`}><strong>{empresa.nombre}</strong> ↗</a>
+        : <strong>{empresa.nombre}</strong>}
+      <br />
+      <span className="muted">{empresa.id}{empresa.web ? '' : ' · sin web'}</span>
+    </>
+  )
+}
+
+// Botón "Editar web": muestra un campo para cargar o cambiar la dirección de la tienda
+function EditarWeb({ empresa, accion }) {
+  const [editando, setEditando] = useState(false)
+  const [web, setWeb] = useState(empresa.web ?? '')
+  if (!editando) {
+    return <button className="boton-vista" onClick={() => { setWeb(empresa.web ?? ''); setEditando(true) }}>{empresa.web ? 'Editar web' : 'Agregar web'}</button>
+  }
+  const guardar = async (e) => {
+    e.preventDefault()
+    const r = await accion(() => api(`/admin/empresas/${empresa.id}`, { body: { web }, method: 'PATCH' }),
+      web.trim() ? `Web de "${empresa.nombre}" guardada.` : `Se quitó la web de "${empresa.nombre}".`)
+    if (r) setEditando(false)
+  }
+  return (
+    <form className="confirmar" onSubmit={guardar}>
+      <input type="url" value={web} onChange={(e) => setWeb(e.target.value)} placeholder="https://mitienda.com" aria-label="Web de la tienda" autoFocus />
+      <button className="boton-vista boton-guardar">Guardar</button>
+      <button type="button" className="boton-vista" onClick={() => setEditando(false)}>Cancelar</button>
+    </form>
+  )
+}
+
 function Empresas({ empresas, fuentes, accion, onVerPanel }) {
-  const [nueva, setNueva] = useState({ id: '', nombre: '', fuente_tipo: 'ga4', valor: '', nota: '' })
+  const [nueva, setNueva] = useState({ id: '', nombre: '', fuente_tipo: 'ga4', valor: '', nota: '', web: '' })
   const fuente = fuentes.find((f) => f.id === nueva.fuente_tipo)
   const campo = fuente?.campos[0]
 
   const crear = async (e) => {
     e.preventDefault()
     const r = await accion(() => api('/admin/empresas', {
-      body: { id: nueva.id, nombre: nueva.nombre, fuente_tipo: nueva.fuente_tipo, fuente_config: { [campo.campo]: nueva.valor.trim() }, nota: nueva.nota },
+      body: { id: nueva.id, nombre: nueva.nombre, fuente_tipo: nueva.fuente_tipo, fuente_config: { [campo.campo]: nueva.valor.trim() }, nota: nueva.nota, web: nueva.web },
     }), `Empresa "${nueva.nombre}" creada. Ahora cargale su KEY de Google.`)
-    if (r) setNueva({ id: '', nombre: '', fuente_tipo: 'ga4', valor: '', nota: '' })
+    if (r) setNueva({ id: '', nombre: '', fuente_tipo: 'ga4', valor: '', nota: '', web: '' })
   }
 
   // Lee el .json elegido y lo manda al backend, que lo guarda encriptado y prueba la conexión
@@ -169,7 +204,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
             <tbody>
               {empresas.map((e) => (
                 <tr key={e.id}>
-                  <td><strong>{e.nombre}</strong><br /><span className="muted">{e.id}</span></td>
+                  <td><NombreEmpresa empresa={e} /></td>
                   <td>{fuentes.find((f) => f.id === e.fuente_tipo)?.nombre ?? e.fuente_tipo}<br /><span className="muted">{Object.values(e.fuente_config).join(', ')}</span></td>
                   <td>{e.tieneCredencial
                     ? <><Estado ok si="Cargada (encriptada)" /><br /><span className="muted correo">{e.credencial_email}</span></>
@@ -182,6 +217,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
                       <input type="file" accept=".json,application/json" onChange={cargarKey(e)} hidden />
                     </label>
                     <button className="boton-vista" onClick={() => probar(e)} disabled={!e.tieneCredencial}>Probar conexión</button>
+                    <EditarWeb empresa={e} accion={accion} />
                     {e.activa
                       ? <BotonConfirmar texto="Dar de baja" pregunta="¿Seguro? Sus usuarios no van a poder entrar." onConfirmar={() => cambiarEstado(e)} />
                       : <button className="boton-vista" onClick={() => cambiarEstado(e)}>Reactivar</button>}
@@ -210,6 +246,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
               </label>
             )}
           </div>
+          <label>Web de la tienda (opcional)<input type="url" value={nueva.web} onChange={(e) => setNueva({ ...nueva, web: e.target.value })} placeholder="https://mitienda.com" /></label>
           <label>Aviso para la empresa (opcional)<textarea rows={2} value={nueva.nota} onChange={(e) => setNueva({ ...nueva, nota: e.target.value })} /></label>
           <div className="acciones-formulario"><button className="boton">Crear empresa</button></div>
         </form>

@@ -242,3 +242,7 @@ label.boton-vista { display: inline-block; }
   .recomendacion-cuerpo { grid-template-columns: 1fr; gap: 2px; }
   .recomendacion-cuerpo dd { margin-bottom: 10px; }
 }
+.link-web { color: var(--serie); text-decoration: none; }
+.link-web:hover { text-decoration: underline; }
+.confirmar input { font: inherit; font-size: .85rem; color: var(--texto); background: var(--plano); border: 1px solid var(--eje); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+.boton-guardar { color: #fff; background: var(--serie); border-color: var(--serie); }

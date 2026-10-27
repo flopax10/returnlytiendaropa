@@ -27,7 +27,9 @@ export default function Panel({ empresa, actualizado, metricas, recomendaciones,
           <span className="marca-sub">Comportamiento pre-compra</span>
         </div>
         <div className="filtros">
-          <span className="empresa">{empresa.nombre}</span>
+          {empresa.web
+            ? <a className="empresa link-web" href={empresa.web} target="_blank" rel="noopener noreferrer" title={`Abrir ${empresa.web}`}>{empresa.nombre} ↗</a>
+            : <span className="empresa">{empresa.nombre}</span>}
           <span className="periodo">{fechaCorta(periodo.desde)} {periodo.desde.getFullYear()} – {fechaCorta(periodo.hasta)} {periodo.hasta.getFullYear()}</span>
           {onVolver ? <button className="boton-vista" onClick={onVolver}>Volver al admin</button> : <CambiarPassword />}
           <button className="boton-vista" onClick={onSalir}>Salir</button>

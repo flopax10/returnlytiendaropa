@@ -28,6 +28,19 @@ function validarCredencial(json) {
   return ok ? null : 'No es un archivo de cuenta de servicio de Google válido (.json con type "service_account")';
 }
 
+// Web de la tienda (opcional): tiene que ser una dirección http(s) completa. Devuelve [error, valor normalizado]
+function validarWeb(web) {
+  const texto = String(web ?? '').trim();
+  if (!texto) return [null, null];
+  try {
+    const url = new URL(texto);
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+    return [null, url.href.replace(/\/$/, '')];
+  } catch {
+    return ['La web tiene que ser una dirección completa, por ejemplo https://mitienda.com', null];
+  }
+}
+
 // Valida la configuración de la fuente según su tipo
 function validarFuente(fuente_tipo, fuente_config) {
   const tipo = TIPOS[fuente_tipo];
@@ -54,12 +67,14 @@ adminRouter.get('/empresas', async (_req, res) => {
 
 adminRouter.post('/empresas', async (req, res) => {
   const { id, nombre, fuente_tipo, fuente_config, nota } = req.body ?? {};
+  const [errorWeb, web] = validarWeb(req.body?.web);
+  if (errorWeb) return error(res, 400, errorWeb);
   if (!/^[a-z0-9-]{2,40}$/.test(id ?? '')) return error(res, 400, 'El identificador va en minúsculas, números y guiones (2 a 40)');
   if (!nombre?.trim()) return error(res, 400, 'Falta el nombre de la empresa');
   const problema = validarFuente(fuente_tipo, fuente_config);
   if (problema) return error(res, 400, problema);
   if (await empresaPorId(id)) return error(res, 409, 'Ya existe una empresa con ese identificador');
-  const empresa = await crearEmpresa({ id, nombre: nombre.trim(), fuente_tipo, fuente_config, nota: nota?.trim() || null });
+  const empresa = await crearEmpresa({ id, nombre: nombre.trim(), fuente_tipo, fuente_config, nota: nota?.trim() || null, web });
   res.status(201).json(publicaEmpresa(empresa));
 });
 
@@ -73,6 +88,11 @@ adminRouter.patch('/empresas/:id', async (req, res) => {
     cambios.nombre = String(nombre).trim();
   }
   if (nota !== undefined) cambios.nota = String(nota).trim() || null;
+  if (req.body?.web !== undefined) {
+    const [errorWeb, web] = validarWeb(req.body.web);
+    if (errorWeb) return error(res, 400, errorWeb);
+    cambios.web = web;
+  }
   if (activa !== undefined) cambios.activa = Boolean(activa);
   if (fuente_tipo !== undefined || fuente_config !== undefined) {
     const tipo = fuente_tipo ?? empresa.fuente_tipo;

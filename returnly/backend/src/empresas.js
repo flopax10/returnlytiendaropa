@@ -9,8 +9,8 @@ export const empresaPorId = async (id) => (await q(db.from('empresa').select('*'
 
 export const listarEmpresas = () => q(db.from('empresa').select('*').order('creada_en'));
 
-export async function crearEmpresa({ id, nombre, fuente_tipo, fuente_config, nota }) {
-  return (await q(db.from('empresa').insert({ id, nombre, fuente_tipo, fuente_config, nota }).select()))[0];
+export async function crearEmpresa({ id, nombre, fuente_tipo, fuente_config, nota, web }) {
+  return (await q(db.from('empresa').insert({ id, nombre, fuente_tipo, fuente_config, nota, web }).select()))[0];
 }
 
 export async function actualizarEmpresa(id, cambios) {
