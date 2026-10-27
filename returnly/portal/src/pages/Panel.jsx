@@ -48,7 +48,7 @@ export default function Panel({ empresa, actualizado, metricas, recomendaciones,
           ))}
         </nav>
 
-        {vista === 'recomendaciones' ? <Recomendaciones recomendaciones={recomendaciones} /> : <>
+        {vista === 'recomendaciones' ? <Recomendaciones recomendaciones={recomendaciones} empresa={empresa} /> : <>
 
         <section className="indicadores" aria-label="Indicadores principales">
           <Indicador destacado etiqueta="Tasa de conversión" valor={pct(kpis.conversion, 2)} detalle="usuarios que compraron" />

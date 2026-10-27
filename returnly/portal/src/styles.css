@@ -246,3 +246,19 @@ label.boton-vista { display: inline-block; }
 .link-web:hover { text-decoration: underline; }
 .confirmar input { font: inherit; font-size: .85rem; color: var(--texto); background: var(--plano); border: 1px solid var(--eje); border-radius: 6px; padding: 6px 8px; min-width: 0; }
 .boton-guardar { color: #fff; background: var(--serie); border-color: var(--serie); }
+
+/* ---- Hacé una pregunta ---- */
+.preguntar { display: grid; gap: 12px; border-color: var(--serie); }
+.preguntar-form { display: flex; gap: 8px; }
+.preguntar-form input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1rem; color: var(--texto); background: var(--plano);
+  border: 1px solid var(--eje); border-radius: 6px; padding: 9px 12px;
+}
+.preguntar-form input:focus { outline: 2px solid var(--serie); outline-offset: 1px; border-color: transparent; }
+.preguntar-form .boton { margin-top: 0; white-space: nowrap; }
+.preguntar-ejemplos { display: flex; flex-wrap: wrap; gap: 6px; }
+.preguntar-historial { display: grid; gap: 10px; }
+.preguntar-item { border-top: 1px solid var(--grilla); padding-top: 10px; display: grid; gap: 6px; justify-items: start; }
+.preguntar-q { font-weight: 600; }
+.preguntar-a { line-height: 1.55; }
+@media (max-width: 760px) { .preguntar-form { flex-direction: column; } }
