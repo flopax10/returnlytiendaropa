@@ -1,4 +1,4 @@
-// Pantalla de recomendaciones: conclusiones "bajadas a tierra" para el negocio, cada una con qué hacer.
+// Pantalla de Feedback: conclusiones "bajadas a tierra" para el negocio, cada una con por qué pasa y qué hacer.
 import { useState } from 'react'
 import { Tabla } from '../components/graficos.jsx'
 
@@ -13,6 +13,12 @@ function Recomendacion({ numero, r }) {
       <dl className="recomendacion-cuerpo">
         <dt>Lo que encontramos</dt>
         <dd>{r.hallazgo}</dd>
+        {r.hipotesis && (
+          <>
+            <dt>Por qué puede pasar</dt>
+            <dd>{r.hipotesis}</dd>
+          </>
+        )}
         <dt>Qué hacer</dt>
         <dd className="recomendacion-accion">{r.accion}</dd>
         {r.impacto && (
@@ -43,10 +49,11 @@ export default function Recomendaciones({ recomendaciones }) {
   return (
     <>
       <section className="tarjeta">
-        <h2>Recomendaciones para tu negocio</h2>
+        <h2>Feedback para tu negocio</h2>
         <p className="subtitulo">
           Conclusiones sacadas del comportamiento de tus clientes antes de comprar. Cada una responde una pregunta del
-          negocio y propone una acción concreta. Los impactos son estimaciones para ayudarte a priorizar.
+          negocio, explica por qué puede estar pasando y propone una acción concreta. Los impactos son estimaciones para
+          ayudarte a priorizar.
         </p>
       </section>
       {recomendaciones.map((r, i) => <Recomendacion key={r.id} numero={i + 1} r={r} />)}

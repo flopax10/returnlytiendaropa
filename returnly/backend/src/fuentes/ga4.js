@@ -188,5 +188,28 @@ export function consultas({ tabla }) {
       SELECT device.category AS dispositivo, event_name AS paso, COUNT(DISTINCT user_pseudo_id) AS usuarios
       FROM ${T} WHERE event_name IN ${PASOS}
       GROUP BY dispositivo, paso`,
+
+    // Página de entrada de cada sesión (la del evento session_start) y si esa sesión terminó en compra
+    landing: `
+      WITH s AS (
+        SELECT ${SESION} AS sesion,
+          MAX(IF(event_name = 'session_start', (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_title'), NULL)) AS pagina,
+          LOGICAL_OR(event_name = 'purchase') AS compra,
+          SUM(IF(event_name = 'purchase', ecommerce.purchase_revenue_in_usd, 0)) AS ingresos
+        FROM ${T} GROUP BY sesion)
+      SELECT IFNULL(pagina, '(sin dato)') AS pagina, COUNT(*) AS sesiones, COUNTIF(compra) AS sesiones_con_compra,
+        ROUND(SUM(ingresos), 2) AS ingresos_usd
+      FROM s GROUP BY pagina HAVING sesiones >= 100 ORDER BY sesiones DESC LIMIT 40`,
+
+    // Visitantes nuevos (su primera visita fue en el período: evento first_visit) contra los que ya conocían la tienda
+    segmentos: `
+      WITH u AS (
+        SELECT user_pseudo_id, LOGICAL_OR(event_name = 'first_visit') AS nuevo,
+          COUNT(DISTINCT IF(event_name = 'purchase', ecommerce.transaction_id, NULL)) AS compras,
+          SUM(IF(event_name = 'purchase', ecommerce.purchase_revenue_in_usd, 0)) AS gasto
+        FROM ${T} GROUP BY user_pseudo_id)
+      SELECT IF(nuevo, 'nuevo', 'vuelve') AS segmento, COUNT(*) AS usuarios, COUNTIF(compras > 0) AS compradores,
+        COUNTIF(compras >= 2) AS recompran, SUM(compras) AS compras, ROUND(SUM(gasto), 2) AS ingresos_usd
+      FROM u GROUP BY segmento`,
   };
 }

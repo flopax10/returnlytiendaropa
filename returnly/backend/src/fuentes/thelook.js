@@ -157,5 +157,33 @@ export function consultas({ dataset }) {
           WHEN 'product' THEN 'view_item' WHEN 'cart' THEN 'add_to_cart' WHEN 'purchase' THEN 'purchase' END AS paso
         FROM ${EV})
       WHERE paso IS NOT NULL GROUP BY dispositivo, paso`,
+
+    // Página de entrada de cada sesión (el primer evento) agrupada por tipo: home, categoría o ficha de producto
+    landing: `
+      WITH s AS (
+        SELECT session_id, MAX(IF(sequence_number = 1, uri, NULL)) AS entrada, LOGICAL_OR(event_type = 'purchase') AS compra
+        FROM ${EV} GROUP BY session_id)
+      SELECT CASE
+          WHEN entrada = '/home' THEN 'Home'
+          WHEN STARTS_WITH(entrada, '/department/') THEN CONCAT('Categoría ',
+            INITCAP(REGEXP_EXTRACT(entrada, r'^/department/([^/]+)')), ' / ',
+            INITCAP(REPLACE(IFNULL(REGEXP_EXTRACT(entrada, r'/category/([^/]+)'), ''), '%20', ' ')))
+          WHEN STARTS_WITH(entrada, '/product/') THEN 'Ficha de producto'
+          ELSE IFNULL(entrada, '(sin dato)') END AS pagina,
+        COUNT(*) AS sesiones, COUNTIF(compra) AS sesiones_con_compra, 0 AS ingresos_usd
+      FROM s GROUP BY pagina HAVING sesiones >= 50 ORDER BY sesiones DESC LIMIT 40`,
+
+    // Visitantes nuevos (se registraron en el período, o no tienen cuenta) contra clientes que ya existían
+    segmentos: `
+      WITH v AS (
+        SELECT DISTINCT e.visitante, e.user_id,
+          IF(e.user_id IS NULL OR u.created_at >= TIMESTAMP(DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)), 'nuevo', 'vuelve') AS segmento
+        FROM ${EV} e LEFT JOIN ${D('users')} u ON u.id = e.user_id),
+      pedidos AS (SELECT user_id, COUNT(*) AS compras FROM ${PEDIDOS} GROUP BY user_id),
+      gasto AS (SELECT user_id, SUM(sale_price) AS gasto FROM ${ITEMS} GROUP BY user_id)
+      SELECT v.segmento, COUNT(*) AS usuarios, COUNTIF(p.compras > 0) AS compradores, COUNTIF(p.compras >= 2) AS recompran,
+        IFNULL(SUM(p.compras), 0) AS compras, ROUND(IFNULL(SUM(g.gasto), 0), 2) AS ingresos_usd
+      FROM v LEFT JOIN pedidos p USING (user_id) LEFT JOIN gasto g USING (user_id)
+      GROUP BY v.segmento`,
   };
 }

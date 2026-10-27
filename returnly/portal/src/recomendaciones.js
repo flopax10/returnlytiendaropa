@@ -324,6 +324,239 @@ function precios(prods) {
   }
 }
 
+// ---- 7. ¿Qué países traen mucho tráfico pero pocos compradores? ----
+function paisesSinCompra(paises, { kpis }) {
+  const filas = paises.filter((p) => p.pais && !/not set/i.test(p.pais))
+  const total = filas.reduce((s, p) => s + p.usuarios, 0)
+  const promedio = div(filas.reduce((s, p) => s + p.compradores, 0), total)
+  const conDatos = filas.map((p) => ({
+    pais: p.pais,
+    usuarios: p.usuarios,
+    partVisitas: div(p.usuarios, total),
+    compradores: p.compradores,
+    conversion: div(p.compradores, p.usuarios),
+  }))
+  const bajos = conDatos
+    .filter((p) => p.usuarios >= total * 0.01 && p.conversion < promedio * 0.95)
+    .map((p) => ({ ...p, brecha: 1 - div(p.conversion, promedio) }))
+    .sort((a, b) => b.brecha - a.brecha)
+    .slice(0, 3)
+  const brechaMaxima = bajos.length ? bajos[0].brecha : 0
+  const base = { id: 'paises', pregunta: '¿Qué países traen mucho tráfico pero pocos compradores?' }
+  const evidencia = {
+    titulo: 'Visitas y compradores por país',
+    columnas: [
+      { titulo: 'País', campo: 'pais' },
+      { titulo: 'Visitantes', campo: 'usuarios', formato: num, numero: true },
+      { titulo: '% de las visitas', campo: 'partVisitas', formato: (v) => pct(v, 0), numero: true },
+      { titulo: 'Compradores', campo: 'compradores', formato: num, numero: true },
+      { titulo: 'Conversión', campo: 'conversion', formato: (v) => pct(v, 2), numero: true },
+    ],
+    filas: [...conDatos].filter((p) => p.usuarios >= total * 0.01).sort((a, b) => a.conversion - b.conversion).slice(0, 10),
+  }
+  if (!bajos.length) {
+    return {
+      ...base,
+      hallazgo: `Todos los países con tráfico importante compran igual o mejor que el promedio (${pct(promedio, 2)}).`,
+      hipotesis: null,
+      accion: 'No hace falta cambiar nada por país. Si se abre un mercado nuevo, medir su conversión desde el primer mes.',
+      impacto: null,
+      evidencia,
+    }
+  }
+  const extra = Math.round(bajos.reduce((s, p) => s + p.usuarios * (promedio - p.conversion), 0))
+  return {
+    ...base,
+    hallazgo: 'Entre los países con tráfico importante, los que menos compran son ' +
+      `${bajos.map((p) => `${p.pais} (${pct(p.partVisitas, 1)} de las visitas, convierte ${pct(p.conversion, 2)}, ${pct(p.brecha, 0)} menos que el promedio)`).join(', ')}. ` +
+      `El promedio de la tienda es ${pct(promedio, 2)}.` +
+      (brechaMaxima < 0.25 ? ' Las diferencias son chicas (menos de un 25 %): es una señal para vigilar más que un problema urgente.' : ''),
+    hipotesis: 'Cuando un país mira mucho y compra poco, suele pasar alguna de estas cosas: el envío a ese país es caro, lento o no ' +
+      'existe, y la persona lo descubre recién en el checkout; los precios están en otra moneda y no se sabe cuánto se termina ' +
+      'pagando (impuestos, aduana); faltan medios de pago locales; o la gente llega por curiosidad (redes, buscadores) sin intención real de comprar.',
+    accion: 'Mostrar desde la ficha si se envía a ese país, cuánto cuesta y cuánto tarda; mostrar precios en moneda local y sumar ' +
+      'medios de pago de ese país. Si no se puede vender ahí, dejar de pagar publicidad en esos países y usar ese presupuesto donde sí se compra.',
+    impacto: extra > 0 ? `Si estos países compraran como el promedio: +${num(extra)} compradores (≈ ${usd(extra * kpis.ticket)}).` : null,
+    evidencia,
+  }
+}
+
+// ---- 8. ¿Qué páginas de entrada se asocian con más compras? ----
+function paginasEntrada(landing, { kpis }) {
+  // El carrito, el login o el checkout no son páginas de entrada reales: es gente que vuelve a terminar algo
+  const noEsEntrada = /cart|carrito|checkout|log ?in|sign ?in|account|cuenta/i
+  const filas = landing.filter((l) => l.pagina !== '(sin dato)' && !noEsEntrada.test(l.pagina)).map((l) => ({
+    pagina: l.pagina,
+    sesiones: l.sesiones,
+    compras: l.sesiones_con_compra,
+    ingresos: l.ingresos_usd,
+    conversion: div(l.sesiones_con_compra, l.sesiones),
+  }))
+  if (filas.length < 3) return null
+  const total = filas.reduce((s, l) => s + l.sesiones, 0)
+  const promedio = div(filas.reduce((s, l) => s + l.compras, 0), total)
+  const relevantes = filas.filter((l) => l.sesiones >= total * 0.01)
+  const mejor = relevantes.reduce((m, l) => (l.conversion > m.conversion ? l : m))
+  const errores = filas.filter((l) => /unavailable|not found|404|error/i.test(l.pagina))
+  const peores = relevantes
+    .filter((l) => l.conversion < promedio * 0.4 && !errores.includes(l))
+    .sort((a, b) => b.sesiones - a.sesiones)
+    .slice(0, 3)
+  const conIngresos = filas.some((l) => l.ingresos > 0)
+  const visitasError = errores.reduce((s, l) => s + l.sesiones, 0)
+  const extra = Math.round(peores.reduce((s, l) => s + l.sesiones * (promedio - l.conversion), 0))
+
+  return {
+    id: 'entrada',
+    pregunta: '¿Qué páginas de entrada se asocian con más compras?',
+    hallazgo: `Quienes entran por "${mejor.pagina}" compran en el ${pct(mejor.conversion)} de las visitas, ` +
+      `${(div(mejor.conversion, promedio)).toLocaleString('es-UY', { maximumFractionDigits: 1 })} veces el promedio (${pct(promedio)}). ` +
+      (peores.length
+        ? `En cambio, ${peores.map((l) => `"${l.pagina}" (${num(l.sesiones)} visitas, ${pct(l.conversion, 2)})`).join(', ')} reciben mucha gente y casi no venden.`
+        : '') +
+      (visitasError ? ` Además, ${num(visitasError)} visitas entraron directo a una página de error: son links rotos que llevan a la tienda.` : ''),
+    hipotesis: 'Las páginas que venden bien muestran productos y precios desde el primer momento y dejan la compra a pocos clics. ' +
+      'Las que no venden suelen recibir gente desde un anuncio, un link o una publicación que promete algo que la página no muestra ' +
+      '(por ejemplo, un producto agotado o una página sin productos), y la persona se va.',
+    accion: `Mandar los anuncios, mails y posteos a "${mejor.pagina}". ` +
+      (peores.length ? `En ${peores.map((l) => `"${l.pagina}"`).join(' y ')}, agregar productos destacados, precio y un botón de compra visible, o redirigir ese tráfico a una página que venda. ` : '') +
+      (visitasError ? 'Encontrar y arreglar (o redirigir) los links que llevan a la página de error.' : ''),
+    impacto: extra > 0 ? `Si esas páginas vendieran como el promedio: +${num(extra)} compras (≈ ${usd(extra * kpis.ticket)}).` : null,
+    evidencia: {
+      titulo: 'Páginas por donde entra la gente',
+      columnas: [
+        { titulo: 'Página de entrada', campo: 'pagina' },
+        { titulo: 'Visitas', campo: 'sesiones', formato: num, numero: true },
+        { titulo: 'Visitas con compra', campo: 'compras', formato: num, numero: true },
+        { titulo: '% que compra', campo: 'conversion', formato: (v) => pct(v, 2), numero: true },
+        ...(conIngresos ? [{ titulo: 'Ingresos', campo: 'ingresos', formato: usd, numero: true }] : []),
+      ],
+      filas: [...relevantes].sort((a, b) => b.sesiones - a.sesiones).slice(0, 12),
+    },
+  }
+}
+
+// ---- 9. ¿Conviene atraer clientes nuevos o volver a traer a los que ya vinieron? ----
+function nuevosVsVuelven(segmentos) {
+  const nuevo = segmentos.find((s) => s.segmento === 'nuevo')
+  const vuelve = segmentos.find((s) => s.segmento === 'vuelve')
+  if (!nuevo || !vuelve) return null
+  const calc = (s) => ({
+    usuarios: s.usuarios,
+    compradores: s.compradores,
+    conversion: div(s.compradores, s.usuarios),
+    gastoComprador: div(s.ingresos_usd, s.compradores),
+    valorVisitante: div(s.ingresos_usd, s.usuarios),
+    recompran: div(s.recompran, s.compradores),
+  })
+  const n = calc(nuevo)
+  const v = calc(vuelve)
+  const veces = div(v.conversion, n.conversion)
+  const recompraTotal = div(nuevo.recompran + vuelve.recompran, nuevo.compradores + vuelve.compradores)
+  const partNuevos = div(n.usuarios, n.usuarios + v.usuarios)
+  const vuelvenRinden = v.conversion > n.conversion * 1.3
+  const extra = Math.round(n.usuarios * 0.1 * Math.max(v.conversion - n.conversion, 0))
+
+  return {
+    id: 'nuevos',
+    pregunta: '¿Conviene atraer clientes nuevos o volver a traer a los que ya vinieron?',
+    hallazgo: `Los visitantes que ya conocían la tienda compran el ${pct(v.conversion, 1)} de las veces, contra el ${pct(n.conversion, 1)} ` +
+      `de los nuevos (${veces.toLocaleString('es-UY', { maximumFractionDigits: 1 })} veces más), y gastan ${usd(v.gastoComprador)} por comprador ` +
+      `contra ${usd(n.gastoComprador)}. Cada visitante que vuelve deja en promedio ${usd(v.valorVisitante)}; uno nuevo, ${usd(n.valorVisitante)}. ` +
+      `El ${pct(partNuevos, 0)} del tráfico son visitantes nuevos, y el ${pct(recompraTotal, 0)} de los compradores compró más de una vez.`,
+    hipotesis: 'Quien vuelve ya conoce la marca y confía en la tienda, y muchas veces viene a terminar una compra que pensó antes. ' +
+      'El visitante nuevo, en cambio, todavía está comparando precios y opciones.',
+    accion: vuelvenRinden
+      ? 'Invertir en volver a traer a quien ya visitó: anuncios de remarketing para quienes vieron productos, mails de carrito abandonado ' +
+        'y de novedades, y un beneficio para la segunda compra (cupón o envío gratis). Sin dejar de atraer nuevos, que son la mayor parte del tráfico.'
+      : 'Los nuevos compran casi igual que los que vuelven: priorizar atraer clientes nuevos (publicidad, redes, alianzas) y cuidar que la primera compra sea fácil.',
+    impacto: extra > 0
+      ? `Si 1 de cada 10 visitantes nuevos volviera y comprara como los que vuelven: ≈ +${num(extra)} compradores (≈ ${usd(extra * v.gastoComprador)}).`
+      : null,
+    evidencia: {
+      titulo: 'Visitantes nuevos contra los que ya conocían la tienda',
+      columnas: [
+        { titulo: 'Tipo de visitante', campo: 'tipo' },
+        { titulo: 'Visitantes', campo: 'usuarios', formato: num, numero: true },
+        { titulo: 'Compradores', campo: 'compradores', formato: num, numero: true },
+        { titulo: 'Conversión', campo: 'conversion', formato: (x) => pct(x, 2), numero: true },
+        { titulo: 'Gasto por comprador', campo: 'gastoComprador', formato: usd, numero: true },
+        { titulo: 'Compraron 2+ veces', campo: 'recompran', formato: (x) => pct(x, 0), numero: true },
+      ],
+      filas: [{ tipo: 'Nuevos', ...n }, { tipo: 'Ya conocían la tienda', ...v }],
+    },
+  }
+}
+
+// ---- 10. ¿En qué días o meses aumenta la intención de compra? ----
+const DIAS_LARGOS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados', 'domingos']
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+function cuandoCompran(diario, diaHora) {
+  if (!diaHora.length) return null
+  // BigQuery: 1 = domingo ... 7 = sábado. Se ordena de lunes a domingo.
+  const dias = DIAS_LARGOS.map((nombre, i) => {
+    const bq = i === 6 ? 1 : i + 2
+    const filas = diaHora.filter((x) => x.dia_semana === bq)
+    const sesiones = filas.reduce((s, x) => s + x.sesiones, 0)
+    const compras = filas.reduce((s, x) => s + x.compras, 0)
+    return { periodo: nombre[0].toUpperCase() + nombre.slice(1), nombre, sesiones, compras, tasa: div(compras, sesiones) }
+  })
+  const mejorDia = dias.reduce((m, d) => (d.tasa > m.tasa ? d : m))
+  const peorDia = dias.reduce((m, d) => (d.tasa < m.tasa ? d : m))
+  const finde = dias.slice(5)
+  const semana = dias.slice(0, 5)
+  const tasaFinde = div(finde.reduce((s, d) => s + d.compras, 0), finde.reduce((s, d) => s + d.sesiones, 0))
+  const tasaSemana = div(semana.reduce((s, d) => s + d.compras, 0), semana.reduce((s, d) => s + d.sesiones, 0))
+
+  // Meses con al menos 15 días de datos
+  const porMes = {}
+  for (const d of diario) {
+    const k = d.fecha.slice(0, 6)
+    porMes[k] ??= { sesiones: 0, compras: 0, dias: 0 }
+    porMes[k].sesiones += d.sesiones
+    porMes[k].compras += d.compras
+    porMes[k].dias += 1
+  }
+  const meses = Object.entries(porMes).filter(([, m]) => m.dias >= 15).map(([k, m]) => {
+    const nombre = `${MESES[Number(k.slice(4, 6)) - 1]} ${k.slice(0, 4)}`
+    return { periodo: `Mes: ${nombre}`, nombre, mes: Number(k.slice(4, 6)), ...m, tasa: div(m.compras, m.sesiones) }
+  })
+  const mejorMes = meses.length > 1 ? meses.reduce((m, x) => (x.tasa > m.tasa ? x : m)) : null
+
+  const hipotesis = [
+    tasaSemana > tasaFinde * 1.1
+      ? 'De lunes a viernes la gente compra en ratos libres y desde la computadora (más cómodo para pagar); el fin de semana navega más desde el celular pero decide menos.'
+      : tasaFinde > tasaSemana * 1.1
+        ? 'El fin de semana la gente tiene más tiempo para mirar con calma y terminar la compra.'
+        : 'La intención de compra es bastante pareja en la semana: no depende tanto del día.',
+    mejorMes && [11, 12].includes(mejorMes.mes) ? `En ${mejorMes.nombre.split(' ')[0]} pesan Black Friday y las compras para las fiestas.` : '',
+  ].filter(Boolean).join(' ')
+
+  return {
+    id: 'cuando',
+    pregunta: '¿En qué días o meses aumenta la intención de compra?',
+    hallazgo: `La intención de compra (compras cada 100 visitas) es más alta los ${mejorDia.nombre} (${(mejorDia.tasa * 100).toLocaleString('es-UY', { maximumFractionDigits: 2 })}) ` +
+      `y más baja los ${peorDia.nombre} (${(peorDia.tasa * 100).toLocaleString('es-UY', { maximumFractionDigits: 2 })}). ` +
+      (mejorMes ? `Entre los meses analizados, ${mejorMes.nombre} fue el de mayor intención de compra.` : ''),
+    hipotesis,
+    accion: `Concentrar promociones, mails y presupuesto de anuncios en los ${mejorDia.nombre}` +
+      (mejorMes ? ` y prepararse para ${mejorMes.nombre.split(' ')[0]} (stock y campañas con anticipación)` : '') +
+      `. En los ${peorDia.nombre}, probar "ofertas del día" o envío gratis para activar la compra.`,
+    impacto: null,
+    evidencia: {
+      titulo: 'Compras cada 100 visitas, por día de la semana y por mes',
+      columnas: [
+        { titulo: 'Día / mes', campo: 'periodo' },
+        { titulo: 'Visitas', campo: 'sesiones', formato: num, numero: true },
+        { titulo: 'Compras', campo: 'compras', formato: num, numero: true },
+        { titulo: 'Compras cada 100 visitas', campo: 'tasa', formato: (x) => (x * 100).toLocaleString('es-UY', { maximumFractionDigits: 2 }), numero: true },
+      ],
+      filas: [...dias, ...meses],
+    },
+  }
+}
+
 export function calcularRecomendaciones(datos, metricas) {
   const prods = productosConDatos(datos.productos ?? [])
   const vistasRepetidas = datos.etiquetas?.vistasRepetidas ?? 3
@@ -332,7 +565,11 @@ export function calcularRecomendaciones(datos, metricas) {
     curiosidadSinCompra(metricas, datos.curiosidad ?? [], vistasRepetidas),
     queDestacar(prods),
     queComprar(prods, metricas),
+    paginasEntrada(datos.landing ?? [], metricas),
     canales(metricas),
+    paisesSinCompra(datos.paises ?? [], metricas),
+    nuevosVsVuelven(datos.segmentos ?? []),
+    cuandoCompran(datos.diario ?? [], datos.dia_hora ?? []),
     precios(prods),
   ].filter(Boolean)
 }

@@ -43,7 +43,7 @@ export default function Panel({ empresa, actualizado, metricas, recomendaciones,
         </p>
 
         <nav className="pestanas" role="tablist">
-          {[['recomendaciones', 'Recomendaciones'], ['dashboards', 'Dashboards']].map(([id, texto]) => (
+          {[['recomendaciones', 'Feedback'], ['dashboards', 'Dashboards']].map(([id, texto]) => (
             <button key={id} role="tab" aria-selected={vista === id} className={vista === id ? 'activa' : ''} onClick={() => setVista(id)}>{texto}</button>
           ))}
         </nav>

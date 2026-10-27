@@ -9,7 +9,7 @@ import { credencialDe } from './empresas.js';
 
 const VIGENCIA_MS = 24 * 3600 * 1000;
 // Subir este número cuando cambian las consultas, así se descarta la caché vieja (también en Vercel)
-const VERSION_CACHE = 2;
+const VERSION_CACHE = 3;
 // En Vercel solo se puede escribir en /tmp
 const CARPETA_CACHE = process.env.VERCEL ? join(tmpdir(), 'returnly-cache') : new URL('../.cache/', import.meta.url);
 const enCurso = new Map(); // evita correr las mismas consultas dos veces a la vez
