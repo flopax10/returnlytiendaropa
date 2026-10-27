@@ -1,6 +1,9 @@
 // Fuente "ga4": consultas sobre el export de GA4 de una empresa en BigQuery (tablas events_*).
 // Devuelven datos ya resumidos para el panel. Sirven para la tabla de prueba de Google o la de cada empresa.
 
+// Cuántas vistas del mismo producto cuentan como "lo miró varias veces" (curiosidad)
+export const etiquetas = { vistasRepetidas: 3 };
+
 export function consultas({ tabla }) {
   const T = `\`${tabla}\``;
 
@@ -156,5 +159,34 @@ export function consultas({ tabla }) {
         COUNT(DISTINCT ${SESION}) AS sesiones,
         COUNT(DISTINCT IF(event_name = 'purchase', ecommerce.transaction_id, NULL)) AS compras
       FROM ${T} GROUP BY dia_semana, hora_utc ORDER BY dia_semana, hora_utc`,
+
+    // ---- Para la pantalla de recomendaciones ----
+
+    // "Curiosidad": usuarios que vieron el producto 3+ veces, y de ellos cuántos nunca lo agregaron al carrito.
+    // El precio sale del carrito y las compras (en las vistas GA4 no lo trae).
+    curiosidad: `
+      ${PRODUCTO_CTE},
+      por_usuario AS (
+        SELECT producto, categoria, user_pseudo_id,
+          COUNTIF(event_name = 'view_item') AS vistas, COUNTIF(event_name = 'add_to_cart') AS carritos,
+          COUNTIF(event_name = 'purchase') AS compras
+        FROM ev GROUP BY producto, categoria, user_pseudo_id),
+      precios AS (SELECT producto, AVG(precio) AS precio FROM ev WHERE precio > 0 GROUP BY producto)
+      SELECT u.producto, u.categoria,
+        COUNTIF(vistas > 0) AS usuarios_vieron,
+        COUNTIF(vistas >= 3) AS usuarios_repetidos,
+        COUNTIF(vistas >= 3 AND carritos = 0) AS repetidos_sin_carrito,
+        COUNTIF(vistas >= 3 AND compras > 0) AS repetidos_compraron,
+        ROUND(ANY_VALUE(p.precio), 2) AS precio_usd
+      FROM por_usuario u LEFT JOIN precios p USING (producto)
+      GROUP BY u.producto, u.categoria
+      HAVING usuarios_vieron > 0
+      ORDER BY usuarios_repetidos DESC LIMIT 300`,
+
+    // Embudo separado por dispositivo, para ver en cuál se pierden más ventas
+    embudo_dispositivo: `
+      SELECT device.category AS dispositivo, event_name AS paso, COUNT(DISTINCT user_pseudo_id) AS usuarios
+      FROM ${T} WHERE event_name IN ${PASOS}
+      GROUP BY dispositivo, paso`,
   };
 }

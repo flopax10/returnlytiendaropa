@@ -1,6 +1,8 @@
 import { num, compacto, usd, pct, fechaCorta, DIAS_SEMANA } from '../metricas.js'
 import { Tarjeta, Tabla, Indicador, LineaTiempo, Barras, MapaCalor } from '../components/graficos.jsx'
 import CambiarPassword from '../components/CambiarPassword.jsx'
+import Recomendaciones from './Recomendaciones.jsx'
+import { useState } from 'react'
 
 const COLUMNAS_PRODUCTO = [
   { titulo: 'Producto', campo: 'producto' },
@@ -11,7 +13,8 @@ const COLUMNAS_PRODUCTO = [
   { titulo: 'Conversión', campo: 'conversion', formato: (v) => pct(v), numero: true },
 ]
 
-export default function Panel({ empresa, actualizado, metricas, onSalir, onVolver }) {
+export default function Panel({ empresa, actualizado, metricas, recomendaciones, onSalir, onVolver }) {
+  const [vista, setVista] = useState('recomendaciones')
   const {
     periodo, kpis, dias, pasosEmbudo, tasaAbandono, oportunidades, destacados,
     porCategoria, porDispositivo, porFuente, porPais, grillaHoraria, sugerencias, etiquetaDispositivo,
@@ -36,6 +39,14 @@ export default function Panel({ empresa, actualizado, metricas, onSalir, onVolve
         <p className="actualizado">
           Datos actualizados el {new Date(actualizado).toLocaleString('es-UY', { dateStyle: 'short', timeStyle: 'short' })}
         </p>
+
+        <nav className="pestanas" role="tablist">
+          {[['recomendaciones', 'Recomendaciones'], ['dashboards', 'Dashboards']].map(([id, texto]) => (
+            <button key={id} role="tab" aria-selected={vista === id} className={vista === id ? 'activa' : ''} onClick={() => setVista(id)}>{texto}</button>
+          ))}
+        </nav>
+
+        {vista === 'recomendaciones' ? <Recomendaciones recomendaciones={recomendaciones} /> : <>
 
         <section className="indicadores" aria-label="Indicadores principales">
           <Indicador destacado etiqueta="Tasa de conversión" valor={pct(kpis.conversion, 2)} detalle="usuarios que compraron" />
@@ -171,6 +182,7 @@ export default function Panel({ empresa, actualizado, metricas, onSalir, onVolve
             <MapaCalor grilla={grillaHoraria} filas={DIAS_SEMANA} formato={num} />
           </Tarjeta>
         </div>
+        </>}
       </main>
     </div>
   )

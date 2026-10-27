@@ -11,7 +11,7 @@
 // - Compras e ingresos salen de orders / order_items, sin los cancelados.
 // - Dispositivo: no existe, se usa el navegador. Fuente de tráfico: traffic_source (sin "medio").
 
-export const etiquetas = { dispositivo: 'navegador' };
+export const etiquetas = { dispositivo: 'navegador', vistasRepetidas: 2 };
 
 export function consultas({ dataset }) {
   const D = (tabla) => `\`${dataset}.${tabla}\``;
@@ -128,5 +128,34 @@ export function consultas({ dataset }) {
       SELECT EXTRACT(DAYOFWEEK FROM created_at) AS dia_semana, EXTRACT(HOUR FROM created_at) AS hora_utc,
         COUNT(DISTINCT session_id) AS sesiones, COUNTIF(event_type = 'purchase') AS compras
       FROM ${EV} GROUP BY dia_semana, hora_utc ORDER BY dia_semana, hora_utc`,
+
+    // ---- Para la pantalla de recomendaciones ----
+
+    // "Curiosidad": visitantes que vieron el producto varias veces (acá 2+, porque hay miles de productos con pocas
+    // vistas cada uno) y de ellos cuántos nunca lo agregaron al carrito
+    curiosidad: `${CON_PRODUCTO},
+      por_visitante AS (
+        SELECT pid, visitante, COUNTIF(event_type = 'product') AS vistas, COUNTIF(event_type = 'cart') AS carritos
+        FROM conprod WHERE pid IS NOT NULL GROUP BY pid, visitante),
+      compraron AS (SELECT DISTINCT product_id AS pid, CAST(user_id AS STRING) AS visitante FROM ${ITEMS})
+      SELECT p.name AS producto, p.category AS categoria,
+        COUNTIF(u.vistas > 0) AS usuarios_vieron,
+        COUNTIF(u.vistas >= 2) AS usuarios_repetidos,
+        COUNTIF(u.vistas >= 2 AND u.carritos = 0) AS repetidos_sin_carrito,
+        COUNTIF(u.vistas >= 2 AND c.pid IS NOT NULL) AS repetidos_compraron,
+        ROUND(ANY_VALUE(p.retail_price), 2) AS precio_usd
+      FROM por_visitante u JOIN ${D('products')} p ON p.id = u.pid
+      LEFT JOIN compraron c ON c.pid = u.pid AND c.visitante = u.visitante
+      GROUP BY producto, categoria
+      ORDER BY usuarios_repetidos DESC, usuarios_vieron DESC LIMIT 300`,
+
+    // Embudo separado por "dispositivo" (acá, navegador)
+    embudo_dispositivo: `
+      SELECT browser AS dispositivo, paso, COUNT(DISTINCT visitante) AS usuarios
+      FROM (
+        SELECT browser, visitante, CASE event_type
+          WHEN 'product' THEN 'view_item' WHEN 'cart' THEN 'add_to_cart' WHEN 'purchase' THEN 'purchase' END AS paso
+        FROM ${EV})
+      WHERE paso IS NOT NULL GROUP BY dispositivo, paso`,
   };
 }

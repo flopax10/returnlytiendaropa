@@ -8,6 +8,8 @@ import { fuenteDe } from './fuentes/index.js';
 import { credencialDe } from './empresas.js';
 
 const VIGENCIA_MS = 24 * 3600 * 1000;
+// Subir este número cuando cambian las consultas, así se descarta la caché vieja (también en Vercel)
+const VERSION_CACHE = 2;
 // En Vercel solo se puede escribir en /tmp
 const CARPETA_CACHE = process.env.VERCEL ? join(tmpdir(), 'returnly-cache') : new URL('../.cache/', import.meta.url);
 const enCurso = new Map(); // evita correr las mismas consultas dos veces a la vez
@@ -27,7 +29,7 @@ async function consultarBigQuery(empresa) {
 }
 
 const archivoCache = (empresa) =>
-  typeof CARPETA_CACHE === 'string' ? join(CARPETA_CACHE, `${empresa.id}.json`) : new URL(`${empresa.id}.json`, CARPETA_CACHE);
+  typeof CARPETA_CACHE === 'string' ? join(CARPETA_CACHE, `${empresa.id}-v${VERSION_CACHE}.json`) : new URL(`${empresa.id}-v${VERSION_CACHE}.json`, CARPETA_CACHE);
 
 async function leerCache(empresa) {
   try {

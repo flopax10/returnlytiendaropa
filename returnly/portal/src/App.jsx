@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { calcularMetricas } from './metricas.js'
+import { calcularRecomendaciones } from './recomendaciones.js'
 import Ingresar from './pages/Ingresar.jsx'
 import Panel from './pages/Panel.jsx'
 import Admin from './pages/Admin.jsx'
@@ -30,7 +31,10 @@ export default function App() {
     setError('')
     const ruta = sesion.usuario.rol === 'admin' ? `/datos?empresa=${encodeURIComponent(empresaVista.id)}` : '/datos'
     api(ruta)
-      .then((r) => setPanel({ empresa: r.empresa, actualizado: r.actualizado, metricas: calcularMetricas(r.datos) }))
+      .then((r) => {
+        const metricas = calcularMetricas(r.datos)
+        setPanel({ empresa: r.empresa, actualizado: r.actualizado, metricas, recomendaciones: calcularRecomendaciones(r.datos, metricas) })
+      })
       .catch((err) => (err.status === 401 ? setSesion(null) : setError(err.message)))
   }, [empresaVista])
 
@@ -62,5 +66,5 @@ export default function App() {
       </main>
     )
   }
-  return <Panel empresa={panel.empresa} actualizado={panel.actualizado} metricas={panel.metricas} onSalir={salir} onVolver={volverAlAdmin} />
+  return <Panel empresa={panel.empresa} actualizado={panel.actualizado} metricas={panel.metricas} recomendaciones={panel.recomendaciones} onSalir={salir} onVolver={volverAlAdmin} />
 }
