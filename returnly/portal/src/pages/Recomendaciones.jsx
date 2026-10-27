@@ -1,7 +1,6 @@
 // Pantalla de Feedback: conclusiones "bajadas a tierra" para el negocio, cada una con por qué pasa y qué hacer.
 import { useState } from 'react'
 import { Tabla } from '../components/graficos.jsx'
-import Preguntar from '../components/Preguntar.jsx'
 
 function Recomendacion({ numero, r }) {
   const [verDatos, setVerDatos] = useState(false)
@@ -46,7 +45,7 @@ function Recomendacion({ numero, r }) {
   )
 }
 
-export default function Recomendaciones({ recomendaciones, empresa }) {
+export default function Recomendaciones({ recomendaciones }) {
   return (
     <>
       <section className="tarjeta">
@@ -57,7 +56,6 @@ export default function Recomendaciones({ recomendaciones, empresa }) {
           ayudarte a priorizar.
         </p>
       </section>
-      <Preguntar empresa={empresa} />
       {recomendaciones.map((r, i) => <Recomendacion key={r.id} numero={i + 1} r={r} />)}
     </>
   )

@@ -1,11 +1,9 @@
 // Backend de Returnly: login, datos para los dashboards de cada empresa y pantalla Admin de seguridad.
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
 import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereSesion } from './auth.js';
 import { usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso } from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
-import { responderPregunta, preguntasConfiguradas } from './preguntas.js';
 
 const app = express();
 app.set('trust proxy', 1); // en Vercel, para que req.ip sea la IP real
@@ -89,47 +87,6 @@ app.get('/api/datos', requiereSesion, async (req, res) => {
   if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
   const { actualizado, datos } = await obtenerDatos(empresa);
   res.json({ empresa: publicaEmpresa(empresa), actualizado, datos });
-});
-
-// "Hacé una pregunta": responde con IA usando SOLO los datos de la empresa (cliente: la suya; admin: ?empresa=id)
-const preguntasPorUsuario = new Map(); // freno al gasto: 30 preguntas por hora por usuario
-const HORA_MS = 3600 * 1000;
-
-app.post('/api/preguntar', requiereSesion, async (req, res) => {
-  const pregunta = String(req.body?.pregunta ?? '').trim();
-  if (pregunta.length < 3) return res.status(400).json({ error: 'Escribí una pregunta' });
-  if (pregunta.length > 500) return res.status(400).json({ error: 'La pregunta es muy larga (máximo 500 caracteres)' });
-  if (!preguntasConfiguradas()) {
-    return res.status(503).json({ error: 'Esta función todavía no está configurada (falta la clave de la API de Claude en el servidor).' });
-  }
-
-  const id = req.usuario.rol === 'admin' ? req.body?.empresa : req.usuario.empresa_id;
-  const empresa = id && await empresaPorId(String(id));
-  if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
-  if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
-
-  const ahora = Date.now();
-  const recientes = (preguntasPorUsuario.get(req.usuario.id) ?? []).filter((t) => ahora - t < HORA_MS);
-  if (recientes.length >= 30) return res.status(429).json({ error: 'Llegaste al límite de 30 preguntas por hora. Probá más tarde.' });
-  preguntasPorUsuario.set(req.usuario.id, [...recientes, ahora]);
-
-  try {
-    const { datos } = await obtenerDatos(empresa);
-    res.json(await responderPregunta(empresa, datos, pregunta));
-  } catch (e) {
-    if (e instanceof Anthropic.AuthenticationError) {
-      console.error('Clave de Claude inválida', e.message);
-      return res.status(503).json({ error: 'La clave de la API de Claude del servidor no es válida.' });
-    }
-    if (e instanceof Anthropic.RateLimitError) {
-      return res.status(429).json({ error: 'Hay muchas preguntas en este momento. Probá en un minuto.' });
-    }
-    if (e instanceof Anthropic.APIError) {
-      console.error('Error de la API de Claude', e.status, e.message);
-      return res.status(502).json({ error: 'No se pudo obtener la respuesta. Probá de nuevo en un rato.' });
-    }
-    throw e;
-  }
 });
 
 app.use('/api/admin', adminRouter);
