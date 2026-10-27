@@ -2,6 +2,7 @@
 // qué hacer y un impacto estimado. Se calculan con los mismos datos del panel (backend /api/datos) más dos
 // consultas extra: curiosidad por producto y embudo por dispositivo.
 import { num, usd, pct } from './metricas.js'
+import { crearBuscadorWeb } from './web.js'
 
 const div = (a, b) => (b ? a / b : 0)
 const NOMBRE_DISPOSITIVO = { desktop: 'computadora', mobile: 'celular', tablet: 'tablet' }
@@ -133,6 +134,7 @@ function curiosidadSinCompra({ pasosEmbudo }, curiosidad, vistasRepetidas) {
       ? 'En los más caros, probar un descuento acotado, cuotas sin interés o venderlos en combo, y medir si sube el agregado al carrito. En el resto, mejorar fotos, guía de talles y descripción.'
       : 'Mejorar la ficha: fotos de detalle y puesto, guía de talles, descripción clara y disponibilidad por talle.',
     impacto: `Si 1 de cada 10 de estos curiosos lo agregara al carrito: ≈ +${num(extraVentas)} ventas (≈ ${usd(extraPlata)}).`,
+    webNombres: casos.slice(0, 3).map((c) => c.producto),
     evidencia: {
       titulo: `Productos que se miran ${vistasRepetidas}+ veces y no se agregan al carrito`,
       columnas: [
@@ -190,6 +192,7 @@ function queDestacar(prods) {
     accion: 'Subir estos productos a la home, a los primeros lugares de su categoría y a los mails y redes. ' +
       (bajar.length ? 'Bajar de los primeros lugares a los que atraen pero no venden, hasta mejorar su ficha o precio.' : ''),
     impacto: `Si estos productos tuvieran un 50 % más de visitas y vendieran igual de bien: ≈ +${usd(extra)} en el período.`,
+    webNombres: [...joyas.slice(0, 2), ...bajar.slice(0, 1)].map((p) => p.producto),
     evidencia: {
       titulo: 'Productos que convierten bien y están poco expuestos',
       columnas: [
@@ -228,6 +231,7 @@ function queComprar(prods, { porCategoria }) {
     accion: 'Asegurar stock (y talles) de los más vendidos antes de que se agoten, ampliar la variedad en ' +
       (catEstrella ? `"${catEstrella.categoria}"` : 'las categorías que mejor convierten') +
       (noReponer.length ? ' y no reponer los que no se venden hasta revisar su precio o ficha.' : '.'),
+    webNombres: [...reponer.slice(0, 2).map((p) => p.producto), catEstrella?.categoria],
     impacto: reponer.length
       ? `Quedarse sin stock de estos productos pone en riesgo ≈ ${usd(reponer.reduce((s, p) => s + p.ingresos, 0))} de ventas del período.`
       : null,
@@ -422,6 +426,8 @@ function paginasEntrada(landing, { kpis }) {
       (peores.length ? `En ${peores.map((l) => `"${l.pagina}"`).join(' y ')}, agregar productos destacados, precio y un botón de compra visible, o redirigir ese tráfico a una página que venda. ` : '') +
       (visitasError ? 'Encontrar y arreglar (o redirigir) los links que llevan a la página de error.' : ''),
     impacto: extra > 0 ? `Si esas páginas vendieran como el promedio: +${num(extra)} compras (≈ ${usd(extra * kpis.ticket)}).` : null,
+    // La que mejor vende y las que peor venden (las más llamativas para mostrar en la web)
+    webNombres: [mejor, ...[...peores].sort((a, b) => a.conversion - b.conversion)].map((l) => l.pagina),
     evidencia: {
       titulo: 'Páginas por donde entra la gente',
       columnas: [
@@ -560,6 +566,11 @@ function cuandoCompran(diario, diaHora) {
 export function calcularRecomendaciones(datos, metricas) {
   const prods = productosConDatos(datos.productos ?? [])
   const vistasRepetidas = datos.etiquetas?.vistasRepetidas ?? 3
+  const buscarWeb = crearBuscadorWeb(datos, metricas.periodo)
+  const conWeb = (r) => {
+    const web = buscarWeb ? (r.webNombres ?? []).map(buscarWeb).filter(Boolean).slice(0, 3) : []
+    return { ...r, web }
+  }
   return [
     dondePerdemos(metricas, datos.embudo_dispositivo ?? [], metricas.etiquetaDispositivo),
     curiosidadSinCompra(metricas, datos.curiosidad ?? [], vistasRepetidas),
@@ -571,5 +582,5 @@ export function calcularRecomendaciones(datos, metricas) {
     nuevosVsVuelven(datos.segmentos ?? []),
     cuandoCompran(datos.diario ?? [], datos.dia_hora ?? []),
     precios(prods),
-  ].filter(Boolean)
+  ].filter(Boolean).map(conWeb)
 }

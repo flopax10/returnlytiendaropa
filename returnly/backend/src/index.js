@@ -4,6 +4,7 @@ import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereS
 import { usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso } from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
+import { copiaMasCercana, fechaMedia } from './archivo.js';
 
 const app = express();
 app.set('trust proxy', 1); // en Vercel, para que req.ip sea la IP real
@@ -87,6 +88,24 @@ app.get('/api/datos', requiereSesion, async (req, res) => {
   if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
   const { actualizado, datos } = await obtenerDatos(empresa);
   res.json({ empresa: publicaEmpresa(empresa), actualizado, datos });
+});
+
+// Copia guardada en el Internet Archive de una página de la tienda (para "cómo se veía en la web").
+// Solo acepta direcciones que estén en los datos de la empresa, para que no se pueda usar como proxy.
+app.get('/api/web-copia', requiereSesion, async (req, res) => {
+  const id = req.usuario.rol === 'admin' ? req.query.empresa : req.usuario.empresa_id;
+  const empresa = id && await empresaPorId(String(id));
+  if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+  const url = String(req.query.url ?? '');
+  const { datos } = await obtenerDatos(empresa);
+  if (!(datos.urls_paginas ?? []).some((p) => p.url === url)) return res.status(400).json({ error: 'Esa página no está en los datos de la empresa' });
+  try {
+    const timestamp = await copiaMasCercana(url, fechaMedia(datos.resumen));
+    res.json({ timestamp });
+  } catch (e) {
+    console.error('Internet Archive', e.message);
+    res.status(502).json({ error: 'No se pudo consultar el Internet Archive' });
+  }
 });
 
 app.use('/api/admin', adminRouter);

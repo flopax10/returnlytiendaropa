@@ -1,8 +1,9 @@
 // Pantalla de Feedback: conclusiones "bajadas a tierra" para el negocio, cada una con por qué pasa y qué hacer.
 import { useState } from 'react'
 import { Tabla } from '../components/graficos.jsx'
+import VistaWeb from '../components/VistaWeb.jsx'
 
-function Recomendacion({ numero, r }) {
+function Recomendacion({ numero, r, empresa }) {
   const [verDatos, setVerDatos] = useState(false)
   return (
     <article className="recomendacion">
@@ -28,6 +29,7 @@ function Recomendacion({ numero, r }) {
           </>
         )}
       </dl>
+      <VistaWeb items={r.web} empresaId={empresa.id} />
       {r.evidencia && (
         <>
           <button className="boton-vista" onClick={() => setVerDatos((v) => !v)} aria-expanded={verDatos}>
@@ -45,7 +47,7 @@ function Recomendacion({ numero, r }) {
   )
 }
 
-export default function Recomendaciones({ recomendaciones }) {
+export default function Recomendaciones({ recomendaciones, empresa }) {
   return (
     <>
       <section className="tarjeta">
@@ -56,7 +58,7 @@ export default function Recomendaciones({ recomendaciones }) {
           ayudarte a priorizar.
         </p>
       </section>
-      {recomendaciones.map((r, i) => <Recomendacion key={r.id} numero={i + 1} r={r} />)}
+      {recomendaciones.map((r, i) => <Recomendacion key={r.id} numero={i + 1} r={r} empresa={empresa} />)}
     </>
   )
 }

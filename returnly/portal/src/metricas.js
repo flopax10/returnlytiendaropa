@@ -1,4 +1,5 @@
 // Métricas del panel: se calculan a partir de los datos GA4 que manda el backend (/api/datos).
+import { crearBuscadorWeb } from './web.js'
 
 // ---- Formatos ----
 export const num = (n) => Math.round(n).toLocaleString('es-UY')
@@ -197,6 +198,10 @@ export function calcularMetricas(datos) {
 
   // Nombre de la dimensión "dispositivo" (algunas fuentes no lo tienen y usan, por ejemplo, el navegador)
   const etiquetaDispositivo = datos.etiquetas?.dispositivo ?? 'dispositivo'
+
+  // Link a cómo se veía cada producto en la web (si la fuente trae las direcciones de las páginas)
+  const buscarWeb = crearBuscadorWeb(datos, periodo)
+  if (buscarWeb) for (const p of [...oportunidades, ...destacados]) p.web = buscarWeb(p.producto)
 
   return { periodo, kpis, dias, pasosEmbudo, tasaAbandono, oportunidades, destacados, porCategoria, porDispositivo, porFuente, porPais, grillaHoraria, sugerencias, etiquetaDispositivo }
 }

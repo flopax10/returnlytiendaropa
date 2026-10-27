@@ -246,3 +246,16 @@ label.boton-vista { display: inline-block; }
 .link-web:hover { text-decoration: underline; }
 .confirmar input { font: inherit; font-size: .85rem; color: var(--texto); background: var(--plano); border: 1px solid var(--eje); border-radius: 6px; padding: 6px 8px; min-width: 0; }
 .boton-guardar { color: #fff; background: var(--serie); border-color: var(--serie); }
+
+/* ---- Cómo se veía en la web ---- */
+.web { width: 100%; display: grid; gap: 8px; }
+.web-titulo { color: var(--texto-suave); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.web-grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.web-item { margin: 0; display: grid; gap: 6px; }
+.web-marco { position: relative; display: block; aspect-ratio: 4 / 3; border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; background: var(--plano); }
+.web-marco img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.web-marco img.web-cargando { opacity: .25; }
+.web-aviso { position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--texto-2); text-align: center; padding: 8px; }
+.web-item figcaption { display: grid; gap: 2px; font-size: .85rem; }
+.web-item figcaption a { color: var(--serie); text-decoration: none; font-size: .8rem; }
+.web-item figcaption a:hover { text-decoration: underline; }

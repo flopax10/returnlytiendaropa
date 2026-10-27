@@ -11,6 +11,10 @@ const COLUMNAS_PRODUCTO = [
   { titulo: 'Al carrito', campo: 'carrito', formato: num, numero: true },
   { titulo: 'Compraron', campo: 'compraron', formato: num, numero: true },
   { titulo: 'Conversión', campo: 'conversion', formato: (v) => pct(v), numero: true },
+  {
+    titulo: 'Web', campo: 'web',
+    formato: (w) => (w ? <a className="link-web" href={`https://web.archive.org/web/${w.fecha}/${w.url}`} target="_blank" rel="noopener noreferrer" title={`Cómo se veía en ${w.fechaTexto}`}>Ver ↗</a> : '—'),
+  },
 ]
 
 export default function Panel({ empresa, actualizado, metricas, recomendaciones, onSalir, onVolver }) {
@@ -48,7 +52,7 @@ export default function Panel({ empresa, actualizado, metricas, recomendaciones,
           ))}
         </nav>
 
-        {vista === 'recomendaciones' ? <Recomendaciones recomendaciones={recomendaciones} /> : <>
+        {vista === 'recomendaciones' ? <Recomendaciones recomendaciones={recomendaciones} empresa={empresa} /> : <>
 
         <section className="indicadores" aria-label="Indicadores principales">
           <Indicador destacado etiqueta="Tasa de conversión" valor={pct(kpis.conversion, 2)} detalle="usuarios que compraron" />

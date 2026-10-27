@@ -201,6 +201,18 @@ export function consultas({ tabla }) {
         ROUND(SUM(ingresos), 2) AS ingresos_usd
       FROM s GROUP BY pagina HAVING sesiones >= 100 ORDER BY sesiones DESC LIMIT 40`,
 
+    // Dirección (URL) más común de cada página según su título: sirve para mostrar en el panel cómo se veía
+    // en la web el producto, la categoría o la página de entrada de la que se habla
+    urls_paginas: `
+      SELECT titulo, APPROX_TOP_COUNT(url, 1)[OFFSET(0)].value AS url, COUNT(*) AS vistas
+      FROM (
+        SELECT (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_title') AS titulo,
+          (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location') AS url
+        FROM ${T} WHERE event_name = 'page_view')
+      WHERE titulo IS NOT NULL AND url IS NOT NULL AND STARTS_WITH(url, 'http')
+      GROUP BY titulo HAVING vistas >= 20
+      ORDER BY vistas DESC LIMIT 3000`,
+
     // Visitantes nuevos (su primera visita fue en el período: evento first_visit) contra los que ya conocían la tienda
     segmentos: `
       WITH u AS (
