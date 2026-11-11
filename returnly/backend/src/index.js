@@ -5,6 +5,7 @@ import { usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, regi
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
 import { copiaMasCercana, fechaMedia } from './archivo.js';
+import { feedbackConIA, iaDisponible } from './ia.js';
 
 const app = express();
 app.set('trust proxy', 1); // en Vercel, para que req.ip sea la IP real
@@ -105,6 +106,25 @@ app.get('/api/web-copia', requiereSesion, async (req, res) => {
   } catch (e) {
     console.error('Internet Archive', e.message);
     res.status(502).json({ error: 'No se pudo consultar el Internet Archive' });
+  }
+});
+
+// Feedback adaptado con IA: el panel manda las recomendaciones que ya calculó y Gemini las adapta al negocio
+app.post('/api/feedback-ia', requiereSesion, async (req, res) => {
+  if (!iaDisponible()) return res.status(503).json({ error: 'La IA no está configurada (falta GEMINI_API_KEY)' });
+  const id = req.usuario.rol === 'admin' ? req.query.empresa : req.usuario.empresa_id;
+  const empresa = id && await empresaPorId(String(id));
+  if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+  if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
+  try {
+    res.json(await feedbackConIA(empresa, req.body?.recomendaciones));
+  } catch (e) {
+    console.error('Feedback IA', e.message);
+    if (e.status === 400) return res.status(400).json({ error: e.message });
+    const limite = e.status === 429;
+    res.status(limite ? 429 : 502).json({
+      error: limite ? 'La IA llegó a su límite gratuito por ahora. Probá más tarde.' : 'No se pudo generar el feedback con IA',
+    });
   }
 });
 
