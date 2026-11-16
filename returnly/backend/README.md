@@ -76,4 +76,4 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | POST | `/api/admin/empresas/:id/probar` | admin | Probar la conexión sin gastar cuota |
 | GET/POST/PATCH | `/api/admin/usuarios` | admin | Listar, crear, bloquear usuarios |
 | POST | `/api/admin/usuarios/:id/resetear-password` | admin | Generar una contraseña temporal nueva |
-| GET | `/api/admin/accesos` | admin | Registro de los últimos 200 ingresos |
+| GET | `/api/admin/accesos` | admin | Registro de los últimos 1000 ingresos |
