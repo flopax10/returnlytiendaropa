@@ -32,7 +32,7 @@ export const publicaEmpresa = ({ credencial_cifrada, ...resto }) => ({ ...resto,
 
 // ---- Usuarios ----
 
-const COLUMNAS_USUARIO = 'id, usuario, nombre, rol, empresa_id, activo, creado_en, ultimo_acceso';
+const COLUMNAS_USUARIO = 'id, usuario, nombre, rol, empresa_id, activo, creado_en, ultimo_acceso, intentos_fallidos, bloqueado_por_intentos, bloqueado_hasta';
 
 export const usuarioParaLogin = async (usuario) =>
   (await q(db.from('usuario').select('*').eq('usuario', String(usuario ?? '').trim().toLowerCase()).limit(1)))[0];
@@ -51,6 +51,36 @@ export async function crearUsuario({ usuario, nombre, rol, empresa_id, password_
 export async function actualizarUsuario(id, cambios) {
   return (await q(db.from('usuario').update(cambios).eq('id', id).select(COLUMNAS_USUARIO)))[0];
 }
+
+// ---- Bloqueo por intentos fallidos ----
+
+export const MAX_INTENTOS = 5;
+export const MINUTOS_BLOQUEO_ADMIN = 15;
+
+export const bloqueoTemporalVigente = (usuario) =>
+  Boolean(usuario?.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > new Date());
+
+// Suma un intento fallido. Al llegar a MAX_INTENTOS bloquea: al cliente hasta que un admin lo desbloquee,
+// al admin por MINUTOS_BLOQUEO_ADMIN (para que nadie pueda dejar a Returnly sin administradores).
+// Devuelve 'cliente' o 'admin' si este intento produjo el bloqueo, o null.
+export async function sumarIntentoFallido(usuario) {
+  const intentos = (usuario.intentos_fallidos ?? 0) + 1;
+  if (intentos < MAX_INTENTOS) {
+    await actualizarUsuario(usuario.id, { intentos_fallidos: intentos });
+    return null;
+  }
+  if (usuario.rol === 'admin') {
+    const hasta = new Date(Date.now() + MINUTOS_BLOQUEO_ADMIN * 60 * 1000).toISOString();
+    await actualizarUsuario(usuario.id, { intentos_fallidos: 0, bloqueado_hasta: hasta });
+    return 'admin';
+  }
+  await actualizarUsuario(usuario.id, { intentos_fallidos: 0, activo: false, bloqueado_por_intentos: true });
+  return 'cliente';
+}
+
+// Al entrar bien (o al desbloquear desde el admin) se limpia el contador
+export const limpiarIntentos = (id) =>
+  actualizarUsuario(id, { intentos_fallidos: 0, bloqueado_por_intentos: false, bloqueado_hasta: null });
 
 // ---- Accesos ----
 

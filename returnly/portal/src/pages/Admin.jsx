@@ -257,6 +257,17 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
 
 // ---- Usuarios ----
 
+// Bloqueo automático: a los 5 intentos fallidos el cliente queda bloqueado y el admin, 15 minutos
+const MAX_INTENTOS = 5
+const temporal = (u) => Boolean(u.bloqueado_hasta && new Date(u.bloqueado_hasta) > new Date())
+function estadoBloqueo(u) {
+  if (temporal(u)) {
+    const hora = new Date(u.bloqueado_hasta).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })
+    return `Bloqueado hasta las ${hora} (intentos fallidos)`
+  }
+  return u.bloqueado_por_intentos ? `Bloqueado por ${MAX_INTENTOS} intentos fallidos` : 'Bloqueado'
+}
+
 function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
   const vacio = { usuario: '', nombre: '', rol: 'cliente', empresa_id: '' }
   const [nuevo, setNuevo] = useState(vacio)
@@ -273,8 +284,12 @@ function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
     const r = await accion(() => api(`/admin/usuarios/${u.id}/resetear-password`, { body: {} }), 'Contraseña reseteada.')
     if (r) setAviso({ usuario: u.usuario, password: r.passwordTemporal })
   }
-  const bloquear = (u) => accion(() => api(`/admin/usuarios/${u.id}`, { body: { activo: !u.activo }, method: 'PATCH' }),
-    `"${u.usuario}" ${u.activo ? 'bloqueado: ya no puede entrar' : 'desbloqueado'}.`)
+  // Un admin con bloqueo temporal sigue "activo": el botón lo desbloquea (manda activo: true y se limpia el bloqueo)
+  const bloquear = (u) => {
+    const desbloquear = !u.activo || temporal(u)
+    return accion(() => api(`/admin/usuarios/${u.id}`, { body: { activo: desbloquear }, method: 'PATCH' }),
+      `"${u.usuario}" ${desbloquear ? 'desbloqueado' : 'bloqueado: ya no puede entrar'}.`)
+  }
 
   return (
     <>
@@ -289,11 +304,16 @@ function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
                   <td><strong>{u.usuario}</strong><br /><span className="muted">{u.nombre}</span></td>
                   <td>{u.rol === 'admin' ? 'Admin' : 'Cliente'}</td>
                   <td>{u.empresa_id ? nombreEmpresa(u.empresa_id) : '—'}</td>
-                  <td><Estado ok={u.activo} si="Activo" no="Bloqueado" /></td>
+                  <td>
+                    <Estado ok={u.activo && !temporal(u)} si="Activo" no={estadoBloqueo(u)} />
+                    {u.activo && !temporal(u) && u.intentos_fallidos > 0 && (
+                      <><br /><span className="muted">{u.intentos_fallidos} de {MAX_INTENTOS} intentos fallidos</span></>
+                    )}
+                  </td>
                   <td>{fecha(u.ultimo_acceso)}</td>
                   <td className="acciones-fila">
                     <BotonConfirmar texto="Resetear contraseña" pregunta="¿Seguro? La actual deja de funcionar." onConfirmar={() => resetear(u)} />
-                    {u.id !== yo.id && <button className="boton-vista" onClick={() => bloquear(u)}>{u.activo ? 'Bloquear' : 'Desbloquear'}</button>}
+                    {u.id !== yo.id && <button className="boton-vista" onClick={() => bloquear(u)}>{u.activo && !temporal(u) ? 'Bloquear' : 'Desbloquear'}</button>}
                   </td>
                 </tr>
               ))}

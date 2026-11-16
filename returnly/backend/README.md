@@ -53,6 +53,9 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 - Sesión en cookie **httpOnly** firmada (8 horas). En cada pedido se verifica que el usuario siga activo: si el
   admin lo bloquea, pierde el acceso al instante.
 - Freno a la fuerza bruta: 10 intentos fallidos por IP cada 15 minutos.
+- **Bloqueo por usuario:** a los 5 intentos seguidos con contraseña incorrecta, un usuario de empresa queda
+  bloqueado hasta que un admin lo desbloquee, y un admin queda bloqueado 15 minutos (así nadie puede dejar a
+  Returnly sin administradores). El contador se guarda en Supabase y vuelve a 0 al entrar bien o al desbloquear.
 - Cada intento de ingreso (bueno o fallido, con motivo, IP y navegador) queda en la tabla `acceso`.
 - El cliente nunca puede pedir datos de otra empresa: el backend usa siempre la empresa de su usuario.
 

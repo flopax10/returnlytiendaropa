@@ -164,7 +164,11 @@ adminRouter.patch('/usuarios/:id', async (req, res) => {
   const { activo, nombre } = req.body ?? {};
   if (usuario.id === req.usuario.id && activo === false) return error(res, 400, 'No te podés bloquear a vos mismo');
   const cambios = {};
-  if (activo !== undefined) cambios.activo = Boolean(activo);
+  if (activo !== undefined) {
+    cambios.activo = Boolean(activo);
+    // Bloquear o desbloquear a mano borra el bloqueo automático y el contador de intentos fallidos
+    Object.assign(cambios, { intentos_fallidos: 0, bloqueado_por_intentos: false, bloqueado_hasta: null });
+  }
   if (nombre !== undefined && String(nombre).trim()) cambios.nombre = String(nombre).trim();
   res.json(await actualizarUsuario(usuario.id, cambios));
 });

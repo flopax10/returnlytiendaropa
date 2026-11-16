@@ -22,7 +22,7 @@ Proyecto obligatorio en grupo. Usa **GitHub** (código), **Supabase** (base de d
 
 **Como Returnly (rol `admin`)**
 - **Empresas:** alta, edición y baja; carga de la KEY de Google de cada una (se guarda encriptada) y prueba de conexión.
-- **Usuarios:** alta, bloqueo y reseteo de contraseña.
+- **Usuarios:** alta, bloqueo y reseteo de contraseña. Bloqueo automático a los 5 intentos fallidos.
 - **Registro de accesos:** cada intento de ingreso con resultado, motivo, IP y navegador, con filtro por
   administradores, por empresa o por usuario inexistente.
 - Abrir el panel de cualquier empresa.

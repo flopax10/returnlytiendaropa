@@ -1,7 +1,10 @@
 // Backend de Returnly: login, datos para los dashboards de cada empresa y pantalla Admin de seguridad.
 import express from 'express';
 import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereSesion } from './auth.js';
-import { usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso } from './empresas.js';
+import {
+  usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso,
+  sumarIntentoFallido, limpiarIntentos, bloqueoTemporalVigente, MAX_INTENTOS, MINUTOS_BLOQUEO_ADMIN,
+} from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
 import { copiaMasCercana, fechaMedia } from './archivo.js';
@@ -37,10 +40,22 @@ app.post('/api/login', async (req, res) => {
   const empresa = passwordOk && usuario.empresa_id ? await empresaPorId(usuario.empresa_id) : null;
 
   let motivo = null;
+  let mensaje = null; // solo para quien ya sabe la contraseña
   if (!usuario) motivo = 'usuario inexistente';
-  else if (!passwordOk) motivo = 'contraseña incorrecta';
-  else if (!usuario.activo) motivo = 'usuario bloqueado';
-  else if (usuario.rol === 'cliente' && !empresa?.activa) motivo = 'empresa dada de baja';
+  else if (bloqueoTemporalVigente(usuario)) {
+    motivo = 'bloqueo temporal por intentos fallidos';
+    const hora = new Date(usuario.bloqueado_hasta).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
+    mensaje = `Por seguridad tu usuario está bloqueado hasta las ${hora} por demasiados intentos fallidos.`;
+  } else if (!passwordOk) {
+    motivo = 'contraseña incorrecta';
+    // Solo cuentan los intentos contra usuarios activos (uno bloqueado ya no puede entrar igual)
+    const bloqueo = usuario.activo ? await sumarIntentoFallido(usuario) : null;
+    if (bloqueo === 'cliente') motivo += ` · usuario bloqueado (${MAX_INTENTOS} intentos fallidos)`;
+    if (bloqueo === 'admin') motivo += ` · bloqueo de ${MINUTOS_BLOQUEO_ADMIN} min (${MAX_INTENTOS} intentos fallidos)`;
+  } else if (!usuario.activo) {
+    motivo = 'usuario bloqueado';
+    if (usuario.bloqueado_por_intentos) mensaje = `Tu usuario se bloqueó por ${MAX_INTENTOS} intentos fallidos. Pedile a Returnly que lo desbloquee.`;
+  } else if (usuario.rol === 'cliente' && !empresa?.activa) motivo = 'empresa dada de baja';
 
   if (motivo) {
     await registrarAcceso({ ...acceso, usuario_id: usuario?.id ?? null, exito: false, motivo });
@@ -48,10 +63,11 @@ app.post('/api/login', async (req, res) => {
     nuevo.cantidad += 1;
     fallidos.set(ip, nuevo);
     // Al que entra no se le dice cuál fue el problema exacto (salvo si ya sabe la contraseña)
-    const mensaje = passwordOk ? 'Tu acceso está deshabilitado. Hablá con Returnly.' : 'Usuario o contraseña incorrectos';
-    return res.status(401).json({ error: mensaje });
+    const error = passwordOk ? (mensaje ?? 'Tu acceso está deshabilitado. Hablá con Returnly.') : 'Usuario o contraseña incorrectos';
+    return res.status(401).json({ error });
   }
 
+  if (usuario.intentos_fallidos || usuario.bloqueado_hasta) await limpiarIntentos(usuario.id);
   fallidos.delete(ip);
   await registrarAcceso({ ...acceso, usuario_id: usuario.id, exito: true, motivo: 'ok' });
   iniciarSesion(res, usuario.id);
