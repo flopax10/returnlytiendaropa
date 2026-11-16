@@ -113,7 +113,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
         {pestana === 'usuarios' && (
           <Usuarios usuarios={usuarios} empresas={empresas} yo={usuario} accion={accion} setAviso={setAviso} nombreEmpresa={nombreEmpresa} />
         )}
-        {pestana === 'accesos' && <Accesos accesos={accesos} nombreEmpresa={nombreEmpresa} onActualizar={cargar} />}
+        {pestana === 'accesos' && <Accesos accesos={accesos} empresas={empresas} nombreEmpresa={nombreEmpresa} onActualizar={cargar} />}
       </main>
     </div>
   )
@@ -339,25 +339,54 @@ function navegador(ua = '') {
   return nombre ?? (ua.includes('curl') ? 'curl' : '—')
 }
 
-function Accesos({ accesos, nombreEmpresa, onActualizar }) {
-  const fallidos = accesos.filter((a) => !a.exito).length
+// Filtro: todos, solo administradores, solo usuarios de una empresa, o intentos con un usuario que no existe
+function grupoDe(a) {
+  if (!a.usuario) return 'desconocido'
+  if (a.usuario.rol === 'admin') return 'admin'
+  return `empresa:${a.usuario.empresa_id}`
+}
+
+function Accesos({ accesos, empresas, nombreEmpresa, onActualizar }) {
+  const [filtro, setFiltro] = useState('todos')
+  const visibles = filtro === 'todos' ? accesos : accesos.filter((a) => grupoDe(a) === filtro)
+  const fallidos = visibles.filter((a) => !a.exito).length
+  const cuantos = (grupo) => accesos.filter((a) => grupoDe(a) === grupo).length
   return (
     <section className="tarjeta">
       <header className="tarjeta-cabezal">
         <div>
           <h2>Registro de accesos</h2>
-          <p className="subtitulo">Últimos {accesos.length} intentos de ingreso · {fallidos} fallidos</p>
+          <p className="subtitulo">{visibles.length} intentos de ingreso · {fallidos} fallidos</p>
         </div>
-        <button className="boton-vista" onClick={onActualizar}>Actualizar</button>
+        <div className="filtros">
+          <label className="filtro-accesos">
+            <span className="muted">Ver</span>
+            <select value={filtro} onChange={(e) => setFiltro(e.target.value)}>
+              <option value="todos">Todos ({accesos.length})</option>
+              <option value="admin">Administradores ({cuantos('admin')})</option>
+              <optgroup label="Usuarios por empresa">
+                {empresas.map((e) => (
+                  <option key={e.id} value={`empresa:${e.id}`}>{e.nombre} ({cuantos(`empresa:${e.id}`)})</option>
+                ))}
+              </optgroup>
+              <option value="desconocido">Usuario inexistente ({cuantos('desconocido')})</option>
+            </select>
+          </label>
+          <button className="boton-vista" onClick={onActualizar}>Actualizar</button>
+        </div>
       </header>
       <div className="tabla-scroll">
         <table className="tabla">
-          <thead><tr><th>Fecha</th><th>Usuario</th><th>Resultado</th><th>Motivo</th><th>IP</th><th>Navegador</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Usuario</th><th>Tipo</th><th>Resultado</th><th>Motivo</th><th>IP</th><th>Navegador</th></tr></thead>
           <tbody>
-            {accesos.map((a) => (
+            {visibles.length === 0 && (
+              <tr><td colSpan={7} className="muted">No hay accesos para este filtro.</td></tr>
+            )}
+            {visibles.map((a) => (
               <tr key={a.id}>
                 <td className="num">{fecha(a.fecha)}</td>
-                <td>{a.usuario_ingresado}{a.usuario?.empresa_id && <><br /><span className="muted">{nombreEmpresa(a.usuario.empresa_id)}</span></>}</td>
+                <td>{a.usuario_ingresado}{a.usuario?.nombre && <><br /><span className="muted">{a.usuario.nombre}</span></>}</td>
+                <td>{!a.usuario ? <span className="muted">—</span> : a.usuario.rol === 'admin' ? 'Administrador' : nombreEmpresa(a.usuario.empresa_id)}</td>
                 <td><Estado ok={a.exito} si="Ingresó" no="Rechazado" /></td>
                 <td>{a.motivo}</td>
                 <td>{a.ip?.replace(/^::ffff:/, "")}</td>

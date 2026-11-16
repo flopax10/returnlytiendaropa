@@ -259,3 +259,6 @@ label.boton-vista { display: inline-block; }
 .web-item figcaption { display: grid; gap: 2px; font-size: .85rem; }
 .web-item figcaption a { color: var(--serie); text-decoration: none; font-size: .8rem; }
 .web-item figcaption a:hover { text-decoration: underline; }
+
+/* ---- Filtro del registro de accesos ---- */
+.filtro-accesos { display: flex; align-items: center; gap: 8px; font-size: .85rem; }

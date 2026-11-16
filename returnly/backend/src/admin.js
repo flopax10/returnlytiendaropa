@@ -181,5 +181,5 @@ adminRouter.post('/usuarios/:id/resetear-password', async (req, res) => {
 // ---- Registro de accesos ----
 
 adminRouter.get('/accesos', async (_req, res) => {
-  res.json(await listarAccesos(200));
+  res.json(await listarAccesos(1000));
 });
