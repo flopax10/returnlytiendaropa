@@ -11,18 +11,25 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ambiente: PROD
+            url: https://zxwudwagkowbxaonzaoh.supabase.co
+            clave: sb_publishable_SI5xXO3npg39n1cJFf9n2A_qqZgzOae
+          - ambiente: QA
+            url: https://taenbbjfjpazspnfgiaj.supabase.co
+            clave: sb_publishable_tUV1PEaD1TtCjStbdVI9zg_wIQE0kLI
     steps:
-      - name: Llamar a ping() en Supabase
-        env:
-          SUPABASE_URL: https://zxwudwagkowbxaonzaoh.supabase.co
-          # Clave PUBLICABLE (pensada para ser pública). Con ella no se puede leer ninguna tabla de Returnly:
-          # todas tienen RLS sin políticas. Solo puede ejecutar ping().
-          SUPABASE_PUBLISHABLE_KEY: sb_publishable_SI5xXO3npg39n1cJFf9n2A_qqZgzOae
+      - name: Llamar a ping() en Supabase (${{ matrix.ambiente }})
+        # Claves PUBLICABLES (pensadas para ser públicas): no pueden leer ninguna tabla de Returnly
+        # (todas tienen RLS sin políticas). Solo pueden ejecutar ping().
         run: |
           curl --fail --silent --show-error --retry 3 --retry-delay 20 \
-            -X POST "$SUPABASE_URL/rest/v1/rpc/ping" \
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -X POST "${{ matrix.url }}/rest/v1/rpc/ping" \
+            -H "apikey: ${{ matrix.clave }}" \
             -H "Content-Type: application/json" \
             -d '{}'
           echo
-          echo "Supabase respondió: el proyecto sigue activo."
+          echo "Supabase ${{ matrix.ambiente }} respondió: el proyecto sigue activo."

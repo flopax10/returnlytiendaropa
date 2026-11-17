@@ -77,7 +77,7 @@ Requisitos: Node.js 22 o más.
 ```bash
 # 1. Backend
 cd returnly/backend
-cp .env.example .env      # completar SESSION_SECRET, SUPABASE_SECRET_KEY y CREDENCIALES_KEY
+cp .env.example .env      # completar con los secretos de QA (nunca los de producción)
 npm install
 npm start                 # http://localhost:3002
 
@@ -87,9 +87,20 @@ npm install
 npm run dev               # http://localhost:5174
 ```
 
+## Ambientes
+
+| Ambiente | Rama | Web | Base de datos |
+|---|---|---|---|
+| **DEV** | cualquiera, en la compu | `localhost:5174` | Supabase *returnly-qa* |
+| **QA** | `qa` | https://returnly-portal-qa.vercel.app | Supabase *returnly-qa* |
+| **PROD** | `main` | https://returnly-portal-flo-e232.vercel.app | Supabase *Returnly* |
+
+Un cambio pasa de DEV → QA (push a `qa`) → PROD (pull request `qa` → `main`). Detalle en
+[`returnly/docs/AMBIENTES.md`](returnly/docs/AMBIENTES.md).
+
 ## Publicación
 
-- Cada cambio que se sube a la rama `main` se publica solo en Vercel (portal y backend).
+- Cada cambio que se sube a `main` se publica solo en producción, y cada cambio en `qa`, en QA (Vercel).
 - Supabase pausa los proyectos gratuitos que pasan unos días sin uso. Para evitarlo, la tarea
   [`mantener-supabase.yml`](.github/workflows/mantener-supabase.yml) consulta la base una vez por día. Se puede
   correr a mano desde la pestaña **Actions** → *Mantener Supabase activo* → **Run workflow**.

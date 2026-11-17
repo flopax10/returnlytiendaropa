@@ -1,5 +1,15 @@
 {
   "rewrites": [
+    {
+      "source": "/api/:ruta*",
+      "has": [{ "type": "host", "value": "returnly-portal-qa.vercel.app" }],
+      "destination": "https://returnly-backend-qa.vercel.app/api/:ruta*"
+    },
+    {
+      "source": "/api/:ruta*",
+      "has": [{ "type": "host", "value": "returnly-portal-qa-flo-e232.vercel.app" }],
+      "destination": "https://returnly-backend-qa.vercel.app/api/:ruta*"
+    },
     { "source": "/api/:ruta*", "destination": "https://returnly-backend.vercel.app/api/:ruta*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
