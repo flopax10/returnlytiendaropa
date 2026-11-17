@@ -262,7 +262,7 @@ const MAX_INTENTOS = 5
 const temporal = (u) => Boolean(u.bloqueado_hasta && new Date(u.bloqueado_hasta) > new Date())
 function estadoBloqueo(u) {
   if (temporal(u)) {
-    const hora = new Date(u.bloqueado_hasta).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })
+    const hora = new Date(u.bloqueado_hasta).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', hour12: false })
     return `Bloqueado hasta las ${hora} (intentos fallidos)`
   }
   return u.bloqueado_por_intentos ? `Bloqueado por ${MAX_INTENTOS} intentos fallidos` : 'Bloqueado'

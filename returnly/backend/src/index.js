@@ -22,14 +22,14 @@ async function sesionPublica(usuario) {
   return { usuario: { id, usuario: nombreUsuario, nombre, rol }, empresa: empresa && publicaEmpresa(empresa) };
 }
 
-// Freno a la fuerza bruta: hasta 10 intentos fallidos por IP cada 15 minutos
+// Freno a la fuerza bruta por IP (además del bloqueo por usuario): hasta 30 intentos fallidos cada 15 minutos
 const fallidos = new Map();
 const VENTANA_MS = 15 * 60 * 1000;
 
 app.post('/api/login', async (req, res) => {
   const ip = req.ip;
   const registro = fallidos.get(ip);
-  if (registro && registro.cantidad >= 10 && Date.now() - registro.desde < VENTANA_MS) {
+  if (registro && registro.cantidad >= 30 && Date.now() - registro.desde < VENTANA_MS) {
     return res.status(429).json({ error: 'Demasiados intentos. Probá de nuevo en unos minutos.' });
   }
   const { usuario: ingresado, password } = req.body ?? {};
@@ -39,32 +39,51 @@ app.post('/api/login', async (req, res) => {
   const passwordOk = usuario && verificarPassword(String(password ?? '').trim(), usuario.password_hash);
   const empresa = passwordOk && usuario.empresa_id ? await empresaPorId(usuario.empresa_id) : null;
 
+  // Mensajes al que intenta entrar: avisan cuántos intentos le quedan y cuándo se bloquea el usuario
+  const hora = (iso) => new Date(iso).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hour12: false });
+  const MSJ_BLOQUEADO = `Tu usuario se bloqueó por ${MAX_INTENTOS} intentos fallidos. Pedile a Returnly que lo desbloquee.`;
+  const msjBloqueoAdmin = (iso) => `Tu usuario se bloqueó por ${MAX_INTENTOS} intentos fallidos. Vas a poder volver a intentar a las ${hora(iso)}.`;
+
   let motivo = null;
-  let mensaje = null; // solo para quien ya sabe la contraseña
+  let mensaje = 'Usuario o contraseña incorrectos';
   if (!usuario) motivo = 'usuario inexistente';
   else if (bloqueoTemporalVigente(usuario)) {
     motivo = 'bloqueo temporal por intentos fallidos';
-    const hora = new Date(usuario.bloqueado_hasta).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
-    mensaje = `Por seguridad tu usuario está bloqueado hasta las ${hora} por demasiados intentos fallidos.`;
+    mensaje = msjBloqueoAdmin(usuario.bloqueado_hasta);
+  } else if (!usuario.activo && usuario.bloqueado_por_intentos) {
+    motivo = 'usuario bloqueado por intentos fallidos';
+    mensaje = MSJ_BLOQUEADO;
   } else if (!passwordOk) {
     motivo = 'contraseña incorrecta';
-    // Solo cuentan los intentos contra usuarios activos (uno bloqueado ya no puede entrar igual)
-    const bloqueo = usuario.activo ? await sumarIntentoFallido(usuario) : null;
-    if (bloqueo === 'cliente') motivo += ` · usuario bloqueado (${MAX_INTENTOS} intentos fallidos)`;
-    if (bloqueo === 'admin') motivo += ` · bloqueo de ${MINUTOS_BLOQUEO_ADMIN} min (${MAX_INTENTOS} intentos fallidos)`;
+    if (usuario.activo) {
+      const { intentos, bloqueo, hasta } = await sumarIntentoFallido(usuario);
+      const quedan = MAX_INTENTOS - intentos;
+      if (bloqueo === 'cliente') {
+        motivo += ` · usuario bloqueado (${MAX_INTENTOS} intentos fallidos)`;
+        mensaje = MSJ_BLOQUEADO;
+      } else if (bloqueo === 'admin') {
+        motivo += ` · bloqueo de ${MINUTOS_BLOQUEO_ADMIN} min (${MAX_INTENTOS} intentos fallidos)`;
+        mensaje = msjBloqueoAdmin(hasta);
+      } else {
+        const consecuencia = usuario.rol === 'admin' ? `se bloquea por ${MINUTOS_BLOQUEO_ADMIN} minutos` : 'se bloquea';
+        mensaje = `Contraseña incorrecta. Te ${quedan === 1 ? 'queda 1 intento' : `quedan ${quedan} intentos`}: ` +
+          `al intento fallido número ${MAX_INTENTOS} tu usuario ${consecuencia}.`;
+      }
+    }
   } else if (!usuario.activo) {
     motivo = 'usuario bloqueado';
-    if (usuario.bloqueado_por_intentos) mensaje = `Tu usuario se bloqueó por ${MAX_INTENTOS} intentos fallidos. Pedile a Returnly que lo desbloquee.`;
-  } else if (usuario.rol === 'cliente' && !empresa?.activa) motivo = 'empresa dada de baja';
+    mensaje = 'Tu acceso está deshabilitado. Hablá con Returnly.';
+  } else if (usuario.rol === 'cliente' && !empresa?.activa) {
+    motivo = 'empresa dada de baja';
+    mensaje = 'Tu acceso está deshabilitado. Hablá con Returnly.';
+  }
 
   if (motivo) {
     await registrarAcceso({ ...acceso, usuario_id: usuario?.id ?? null, exito: false, motivo });
     const nuevo = registro && Date.now() - registro.desde < VENTANA_MS ? registro : { cantidad: 0, desde: Date.now() };
     nuevo.cantidad += 1;
     fallidos.set(ip, nuevo);
-    // Al que entra no se le dice cuál fue el problema exacto (salvo si ya sabe la contraseña)
-    const error = passwordOk ? (mensaje ?? 'Tu acceso está deshabilitado. Hablá con Returnly.') : 'Usuario o contraseña incorrectos';
-    return res.status(401).json({ error });
+    return res.status(401).json({ error: mensaje });
   }
 
   if (usuario.intentos_fallidos || usuario.bloqueado_hasta) await limpiarIntentos(usuario.id);

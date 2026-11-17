@@ -62,20 +62,20 @@ export const bloqueoTemporalVigente = (usuario) =>
 
 // Suma un intento fallido. Al llegar a MAX_INTENTOS bloquea: al cliente hasta que un admin lo desbloquee,
 // al admin por MINUTOS_BLOQUEO_ADMIN (para que nadie pueda dejar a Returnly sin administradores).
-// Devuelve 'cliente' o 'admin' si este intento produjo el bloqueo, o null.
+// Devuelve { intentos, bloqueo } con bloqueo = 'cliente' | 'admin' si este intento produjo el bloqueo, o null.
 export async function sumarIntentoFallido(usuario) {
   const intentos = (usuario.intentos_fallidos ?? 0) + 1;
   if (intentos < MAX_INTENTOS) {
     await actualizarUsuario(usuario.id, { intentos_fallidos: intentos });
-    return null;
+    return { intentos, bloqueo: null };
   }
   if (usuario.rol === 'admin') {
     const hasta = new Date(Date.now() + MINUTOS_BLOQUEO_ADMIN * 60 * 1000).toISOString();
     await actualizarUsuario(usuario.id, { intentos_fallidos: 0, bloqueado_hasta: hasta });
-    return 'admin';
+    return { intentos, bloqueo: 'admin', hasta };
   }
   await actualizarUsuario(usuario.id, { intentos_fallidos: 0, activo: false, bloqueado_por_intentos: true });
-  return 'cliente';
+  return { intentos, bloqueo: 'cliente' };
 }
 
 // Al entrar bien (o al desbloquear desde el admin) se limpia el contador
