@@ -5,7 +5,7 @@ Cada empresa entra con su usuario y ve dashboards y feedback calculados con **su
 (embudo de compra, productos, canales, dispositivos, países). El equipo de Returnly administra las empresas, los
 usuarios y la seguridad desde una pantalla de Admin.
 
-🔗 **Web publicada:** https://returnly-portal.vercel.app
+🔗 **Web publicada:** https://returnly-portal-flo-e232.vercel.app
 
 Proyecto obligatorio en grupo. Usa **GitHub** (código), **Supabase** (base de datos) y **Vercel** (publicación).
 
