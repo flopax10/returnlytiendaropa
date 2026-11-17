@@ -4,6 +4,7 @@ import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereS
 import {
   usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso,
   sumarIntentoFallido, limpiarIntentos, bloqueoTemporalVigente, MAX_INTENTOS, MINUTOS_BLOQUEO_ADMIN, registrarAuditoria,
+  seguimientoDe, guardarSeguimiento,
 } from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
@@ -152,6 +153,37 @@ app.get('/api/web-copia', requiereSesion, async (req, res) => {
     console.error('Internet Archive', e.message);
     res.status(502).json({ error: 'No se pudo consultar el Internet Archive' });
   }
+});
+
+// Seguimiento de recomendaciones: la empresa marca cada una como pendiente / en curso / hecha y la vota 👍 / 👎.
+// El admin lo puede ver (?empresa=id) pero no cambiarlo: es la opinión de la empresa.
+const ESTADOS = ['pendiente', 'en_curso', 'hecha'];
+
+app.get('/api/seguimiento', requiereSesion, async (req, res) => {
+  const id = req.usuario.rol === 'admin' ? req.query.empresa : req.usuario.empresa_id;
+  const empresa = id && await empresaPorId(String(id));
+  if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+  res.json(await seguimientoDe(empresa.id));
+});
+
+app.put('/api/seguimiento/:recomendacion', requiereSesion, async (req, res) => {
+  if (req.usuario.rol !== 'cliente') return res.status(403).json({ error: 'El avance lo marca cada empresa desde su panel' });
+  const empresa = await empresaPorId(req.usuario.empresa_id);
+  if (!empresa?.activa) return res.status(403).json({ error: 'Tu empresa está dada de baja' });
+  const recomendacion = String(req.params.recomendacion);
+  if (!/^[a-z0-9_-]{1,40}$/.test(recomendacion)) return res.status(400).json({ error: 'Recomendación desconocida' });
+  const { estado, voto } = req.body ?? {};
+  const cambios = {};
+  if (estado !== undefined) {
+    if (!ESTADOS.includes(estado)) return res.status(400).json({ error: 'El estado es pendiente, en_curso o hecha' });
+    cambios.estado = estado;
+  }
+  if (voto !== undefined) {
+    if (![1, -1, null].includes(voto)) return res.status(400).json({ error: 'El voto es 1 (👍), -1 (👎) o null (sin voto)' });
+    cambios.voto = voto;
+  }
+  if (!Object.keys(cambios).length) return res.status(400).json({ error: 'No hay nada para guardar' });
+  res.json(await guardarSeguimiento(empresa.id, recomendacion, cambios, req.usuario.id));
 });
 
 app.use('/api/admin', adminRouter);

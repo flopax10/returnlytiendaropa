@@ -18,10 +18,12 @@ Proyecto obligatorio en grupo. Usa **GitHub** (código), **Supabase** (base de d
 - **Feedback para tu negocio:** recomendaciones que responden preguntas del negocio ("¿dónde perdemos ventas?",
   "¿qué producto destacar?"…). Cada una tiene lo que encontramos, por qué puede pasar, qué hacer y un impacto
   estimado, con los datos que la respaldan.
+- **Seguimiento:** marcar cada recomendación como pendiente, en curso o hecha (con el avance arriba) y votarla con
+  👍 / 👎 para contarle a Returnly si sirvió.
 - Cambiar la propia contraseña.
 
 **Como Returnly (rol `admin`)**
-- **Empresas:** alta, edición y baja; carga de la KEY de Google de cada una (se guarda encriptada) y prueba de conexión.
+- **Empresas:** alta, edición y baja; cuánto usa cada una el feedback (hechas, en curso, 👍 / 👎); carga de la KEY de Google de cada una (se guarda encriptada) y prueba de conexión.
 - **Usuarios:** alta, bloqueo y reseteo de contraseña. Bloqueo automático a los 5 intentos fallidos.
 - **Registro de accesos:** cada intento de ingreso con resultado, motivo, IP y navegador, con filtro por
   administradores, por empresa o por usuario inexistente.
@@ -35,7 +37,7 @@ Navegador ──> Portal (React + Vite, Vercel)
                  │  /api
                  ▼
               Backend (Node.js + Express, Vercel)
-                 ├──> Supabase: empresas, usuarios y registro de accesos
+                 ├──> Supabase: empresas, usuarios, accesos, auditoría y seguimiento
                  └──> BigQuery: datos de comportamiento de cada empresa, con SU KEY de Google
 ```
 

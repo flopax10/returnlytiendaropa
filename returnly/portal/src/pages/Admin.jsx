@@ -55,6 +55,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
   const [usuarios, setUsuarios] = useState([])
   const [accesos, setAccesos] = useState([])
   const [auditoria, setAuditoria] = useState([])
+  const [seguimiento, setSeguimiento] = useState({})
   const [fuentes, setFuentes] = useState([])
   const [mensaje, setMensaje] = useState(null)
   const [aviso, setAviso] = useState(null)
@@ -62,8 +63,8 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
   const avisar = (texto, error = false) => setMensaje({ texto, error })
   const cargar = async () => {
     try {
-      const [e, u, a, f, au] = await Promise.all([api('/admin/empresas'), api('/admin/usuarios'), api('/admin/accesos'), api('/admin/fuentes'), api('/admin/auditoria')])
-      setEmpresas(e); setUsuarios(u); setAccesos(a); setFuentes(f); setAuditoria(au)
+      const [e, u, a, f, au, sg] = await Promise.all([api('/admin/empresas'), api('/admin/usuarios'), api('/admin/accesos'), api('/admin/fuentes'), api('/admin/auditoria'), api('/admin/seguimiento')])
+      setEmpresas(e); setUsuarios(u); setAccesos(a); setFuentes(f); setAuditoria(au); setSeguimiento(sg)
     } catch (err) {
       avisar(err.message, true)
     }
@@ -109,7 +110,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
         <AvisoPassword aviso={aviso} onCerrar={() => setAviso(null)} />
 
         {pestana === 'empresas' && (
-          <Empresas empresas={empresas} fuentes={fuentes} accion={accion} onVerPanel={onVerPanel} />
+          <Empresas empresas={empresas} fuentes={fuentes} seguimiento={seguimiento} accion={accion} onVerPanel={onVerPanel} />
         )}
         {pestana === 'usuarios' && (
           <Usuarios usuarios={usuarios} empresas={empresas} yo={usuario} accion={accion} setAviso={setAviso} nombreEmpresa={nombreEmpresa} />
@@ -158,7 +159,18 @@ function EditarWeb({ empresa, accion }) {
   )
 }
 
-function Empresas({ empresas, fuentes, accion, onVerPanel }) {
+// Cómo usa cada empresa el feedback: cuántas recomendaciones marcó en curso / hechas y cuántos 👍 / 👎 dio
+function UsoFeedback({ r }) {
+  if (!r) return <span className="muted">Todavía sin marcar</span>
+  return (
+    <>
+      {r.hecha} hechas · {r.en_curso} en curso
+      <br /><span className="muted">👍 {r.positivos} · 👎 {r.negativos}</span>
+    </>
+  )
+}
+
+function Empresas({ empresas, fuentes, seguimiento, accion, onVerPanel }) {
   const [nueva, setNueva] = useState({ id: '', nombre: '', fuente_tipo: 'ga4', valor: '', nota: '', web: '' })
   const fuente = fuentes.find((f) => f.id === nueva.fuente_tipo)
   const campo = fuente?.campos[0]
@@ -202,7 +214,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
         <header className="tarjeta-cabezal"><div><h2>Empresas</h2><p className="subtitulo">Tiendas clientes de Returnly y la conexión a sus datos</p></div></header>
         <div className="tabla-scroll">
           <table className="tabla">
-            <thead><tr><th>Empresa</th><th>Fuente</th><th>KEY de Google</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Empresa</th><th>Fuente</th><th>KEY de Google</th><th>Estado</th><th>Uso del feedback</th><th>Acciones</th></tr></thead>
             <tbody>
               {empresas.map((e) => (
                 <tr key={e.id}>
@@ -212,6 +224,7 @@ function Empresas({ empresas, fuentes, accion, onVerPanel }) {
                     ? <><Estado ok si="Cargada (encriptada)" /><br /><span className="muted correo">{e.credencial_email}</span></>
                     : <Estado no="Sin KEY cargada" />}</td>
                   <td><Estado ok={e.activa} si="Activa" no="Dada de baja" /></td>
+                  <td><UsoFeedback r={seguimiento[e.id]} /></td>
                   <td className="acciones-fila">
                     <button className="boton-vista" onClick={() => onVerPanel(e)} disabled={!e.tieneCredencial}>Ver panel</button>
                     <label className="boton-vista">

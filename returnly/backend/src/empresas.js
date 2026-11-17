@@ -116,3 +116,31 @@ export async function registrarAuditoria({ actor, accion, objetivo_tipo, objetiv
 export const listarAuditoria = (limite = 1000) =>
   q(db.from('auditoria').select('id, fecha, actor_usuario, accion, objetivo_tipo, objetivo_id, objetivo_nombre, detalle, ip')
     .order('fecha', { ascending: false }).limit(limite));
+
+// ---- Seguimiento de recomendaciones: estado (pendiente / en curso / hecha) y voto (👍 1 / 👎 -1) ----
+// Es por empresa: lo que marca un usuario de la empresa lo ven todos los de esa empresa.
+const COLUMNAS_SEGUIMIENTO = 'recomendacion_id, estado, voto, actualizado_en';
+
+export const seguimientoDe = (empresaId) =>
+  q(db.from('seguimiento').select(COLUMNAS_SEGUIMIENTO).eq('empresa_id', empresaId));
+
+export async function guardarSeguimiento(empresaId, recomendacionId, cambios, usuarioId) {
+  return (await q(db.from('seguimiento')
+    .upsert({ empresa_id: empresaId, recomendacion_id: recomendacionId, ...cambios, actualizado_en: new Date().toISOString(), actualizado_por: usuarioId },
+      { onConflict: 'empresa_id,recomendacion_id' })
+    .select(COLUMNAS_SEGUIMIENTO)))[0];
+}
+
+// Para el admin: cuántas recomendaciones marcó cada empresa en cada estado y cuántos 👍 / 👎 dio
+export async function resumenSeguimiento() {
+  const filas = await q(db.from('seguimiento').select('empresa_id, estado, voto'));
+  const resumen = {};
+  for (const f of filas) {
+    const r = (resumen[f.empresa_id] ??= { en_curso: 0, hecha: 0, positivos: 0, negativos: 0 });
+    if (f.estado === 'en_curso') r.en_curso += 1;
+    if (f.estado === 'hecha') r.hecha += 1;
+    if (f.voto === 1) r.positivos += 1;
+    if (f.voto === -1) r.negativos += 1;
+  }
+  return resumen;
+}

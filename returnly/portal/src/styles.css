@@ -271,3 +271,40 @@ label.boton-vista { display: inline-block; }
   border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
 }
 .aviso-inactividad p { margin: 0; flex: 1 1 260px; line-height: 1.45; }
+
+/* ---- Seguimiento de recomendaciones (estado y 👍 / 👎) ---- */
+.seguimiento {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+  border-top: 1px solid var(--borde); padding-top: 14px; margin-top: 4px; align-self: stretch; width: 100%; box-sizing: border-box;
+}
+.seguimiento-grupo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.seguimiento-etiqueta { font-size: .8rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .04em; }
+.segmentado { display: inline-flex; border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; }
+.segmento {
+  font: inherit; font-size: .85rem; padding: 6px 12px; background: none; color: var(--texto-2);
+  border: 0; border-right: 1px solid var(--borde); cursor: pointer;
+}
+.segmento:last-child { border-right: 0; }
+.segmento:hover:not(:disabled) { color: var(--texto); background: var(--plano); }
+.segmento[aria-pressed="true"] { color: #fff; font-weight: 600; background: var(--texto-2); }
+.segmento-en_curso[aria-pressed="true"] { background: #b7791f; }
+.segmento-hecha[aria-pressed="true"] { background: #2f855a; }
+.segmento:disabled { cursor: default; }
+.segmento:disabled:not([aria-pressed="true"]) { opacity: .55; }
+.votos { display: inline-flex; gap: 6px; }
+.voto {
+  font-size: 1.05rem; line-height: 1; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  background: none; border: 1px solid var(--borde); filter: grayscale(1); opacity: .7;
+}
+.voto:hover:not(:disabled) { opacity: 1; filter: none; }
+.voto[aria-pressed="true"] { filter: none; opacity: 1; border-color: var(--serie); background: color-mix(in srgb, var(--serie) 12%, transparent); }
+.voto:disabled { cursor: default; }
+.etiqueta-estado { margin-left: auto; flex: none; font-size: .75rem; font-weight: 600; border-radius: 999px; padding: 2px 10px; color: #fff; }
+.etiqueta-en-curso { background: #b7791f; }
+.etiqueta-hecha { background: #2f855a; }
+.recomendacion-hecha .recomendacion-numero { background: #2f855a; }
+.avance { display: grid; gap: 6px; margin-top: 12px; }
+.avance-barra { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--grilla); }
+.avance-hechas { background: #2f855a; transition: width .3s; }
+.avance-curso { background: #d69e2e; transition: width .3s; }
+.avance-ayuda { margin: 0; font-size: .8rem; }

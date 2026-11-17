@@ -27,7 +27,7 @@ Después levantá el panel (`returnly/portal`, `npm run dev`) y entrá a http://
 
 ## Datos en Supabase
 
-Tablas `empresa`, `usuario`, `acceso` y `auditoria` (SQL en `returnly/supabase/`, en orden).
+Tablas `empresa`, `usuario`, `acceso`, `auditoria` y `seguimiento` (SQL en `returnly/supabase/`, en orden).
 Tienen RLS activado **sin políticas** y sin permisos para los roles públicos: con la clave publicable no se
 pueden leer. Solo este backend accede, con la clave secreta (`SUPABASE_SECRET_KEY`).
 
@@ -86,4 +86,7 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | GET/POST/PATCH | `/api/admin/usuarios` | admin | Listar, crear, bloquear usuarios |
 | POST | `/api/admin/usuarios/:id/resetear-password` | admin | Generar una contraseña temporal nueva |
 | GET | `/api/admin/accesos` | admin | Registro de los últimos 1000 ingresos |
+| GET | `/api/seguimiento` | logueado | Estado y voto de cada recomendación de su empresa (el admin elige con `?empresa=id`) |
+| PUT | `/api/seguimiento/:recomendacion` | cliente | Marca `estado` (pendiente / en_curso / hecha) y/o `voto` (1, -1 o null) |
+| GET | `/api/admin/seguimiento` | admin | Resumen por empresa: hechas, en curso, 👍 y 👎 |
 | GET | `/api/admin/auditoria` | admin | Últimos 1000 cambios hechos sobre empresas y usuarios |

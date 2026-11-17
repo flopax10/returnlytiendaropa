@@ -5,7 +5,7 @@ import { requiereSesion, requiereAdmin, hashPassword } from './auth.js';
 import {
   listarEmpresas, empresaPorId, crearEmpresa, actualizarEmpresa, guardarCredencial, publicaEmpresa,
   listarUsuarios, usuarioPorId, crearUsuario, actualizarUsuario, listarAccesos,
-  registrarAuditoria, listarAuditoria, bloqueoTemporalVigente,
+  registrarAuditoria, listarAuditoria, bloqueoTemporalVigente, resumenSeguimiento,
 } from './empresas.js';
 import { probarConexion, borrarCache } from './datos.js';
 import { TIPOS } from './fuentes/index.js';
@@ -226,6 +226,12 @@ adminRouter.post('/usuarios/:id/resetear-password', async (req, res) => {
 
 adminRouter.get('/accesos', async (_req, res) => {
   res.json(await listarAccesos(1000));
+});
+
+// ---- Seguimiento de recomendaciones (resumen por empresa) ----
+
+adminRouter.get('/seguimiento', async (_req, res) => {
+  res.json(await resumenSeguimiento());
 });
 
 // ---- Auditoría (quién hizo qué cambio) ----
