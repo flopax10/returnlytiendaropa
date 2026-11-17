@@ -53,7 +53,7 @@ Navegador ──> Portal (React + Vite, Vercel)
 | [`returnly/portal`](returnly/portal) | Web de Returnly (login, panel, feedback y Admin) |
 | [`returnly/backend`](returnly/backend) | API de Returnly. Su [README](returnly/backend/README.md) detalla roles, seguridad y rutas |
 | [`returnly/supabase`](returnly/supabase) | SQL de las tablas de Supabase, en orden |
-| [`returnly/docs`](returnly/docs) | Documentación: [modelo entidad-relación (MER)](returnly/docs/MER-Returnly.pdf) |
+| [`returnly/docs`](returnly/docs) | Documentación: [modelo entidad-relación (MER)](returnly/docs/MER-Returnly.pdf) en PDF y [en GitHub](returnly/docs/MER.md) |
 | [`.github/workflows`](.github/workflows) | Tarea diaria que mantiene activo el proyecto de Supabase |
 
 ## Datos de las empresas de ejemplo
