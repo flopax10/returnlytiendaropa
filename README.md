@@ -25,6 +25,7 @@ Proyecto obligatorio en grupo. Usa **GitHub** (código), **Supabase** (base de d
 - **Usuarios:** alta, bloqueo y reseteo de contraseña. Bloqueo automático a los 5 intentos fallidos.
 - **Registro de accesos:** cada intento de ingreso con resultado, motivo, IP y navegador, con filtro por
   administradores, por empresa o por usuario inexistente.
+- **Auditoría:** quién creó, editó, bloqueó, desbloqueó o reseteó qué, y cuándo (incluye los bloqueos automáticos).
 - Abrir el panel de cualquier empresa.
 
 ## Cómo está armado
@@ -40,7 +41,8 @@ Navegador ──> Portal (React + Vite, Vercel)
 
 - El navegador **nunca** habla directo con Supabase ni con BigQuery: todo pasa por el backend.
 - Las tablas de Supabase tienen RLS activado y sin políticas: con la clave pública no se pueden leer.
-- Contraseñas hasheadas (scrypt), KEY de Google encriptadas (AES-256-GCM), sesión en cookie httpOnly firmada.
+- Contraseñas hasheadas (scrypt), KEY de Google encriptadas (AES-256-GCM), sesión en cookie httpOnly firmada que
+  se cierra a los 30 minutos sin uso (con aviso 2 minutos antes).
 
 ## Estructura del repositorio
 

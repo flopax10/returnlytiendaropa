@@ -5,6 +5,7 @@ import { requiereSesion, requiereAdmin, hashPassword } from './auth.js';
 import {
   listarEmpresas, empresaPorId, crearEmpresa, actualizarEmpresa, guardarCredencial, publicaEmpresa,
   listarUsuarios, usuarioPorId, crearUsuario, actualizarUsuario, listarAccesos,
+  registrarAuditoria, listarAuditoria, bloqueoTemporalVigente,
 } from './empresas.js';
 import { probarConexion, borrarCache } from './datos.js';
 import { TIPOS } from './fuentes/index.js';
@@ -13,6 +14,9 @@ export const adminRouter = Router();
 adminRouter.use(requiereSesion, requiereAdmin);
 
 const error = (res, status, mensaje) => res.status(status).json({ error: mensaje });
+
+// Deja registrado en la auditoría lo que hizo el admin logueado
+const auditar = (req, datos) => registrarAuditoria({ actor: req.usuario, ip: req.ip, ...datos });
 
 // Contraseña temporal legible (sin letras que se confunden). Se muestra una sola vez al admin.
 export function passwordTemporal() {
@@ -75,6 +79,7 @@ adminRouter.post('/empresas', async (req, res) => {
   if (problema) return error(res, 400, problema);
   if (await empresaPorId(id)) return error(res, 409, 'Ya existe una empresa con ese identificador');
   const empresa = await crearEmpresa({ id, nombre: nombre.trim(), fuente_tipo, fuente_config, nota: nota?.trim() || null, web });
+  await auditar(req, { accion: 'Creó la empresa', objetivo_tipo: 'empresa', objetivo_id: empresa.id, objetivo_nombre: empresa.nombre, detalle: `Fuente de datos: ${fuente_tipo}` });
   res.status(201).json(publicaEmpresa(empresa));
 });
 
@@ -103,6 +108,17 @@ adminRouter.patch('/empresas/:id', async (req, res) => {
   }
   const actualizada = await actualizarEmpresa(empresa.id, cambios);
   if (cambios.fuente_tipo) await borrarCache(empresa);
+
+  // Auditoría: baja/reactivación, o qué campos cambiaron
+  const NOMBRES = { nombre: 'nombre', nota: 'nota', web: 'web', fuente_tipo: 'fuente de datos', fuente_config: 'fuente de datos' };
+  const editados = [...new Set(Object.keys(cambios)
+    .filter((k) => k !== 'activa' && JSON.stringify(cambios[k]) !== JSON.stringify(empresa[k]))
+    .map((k) => NOMBRES[k] ?? k))];
+  const base = { objetivo_tipo: 'empresa', objetivo_id: empresa.id, objetivo_nombre: actualizada.nombre };
+  if (cambios.activa !== undefined && cambios.activa !== empresa.activa) {
+    await auditar(req, { ...base, accion: cambios.activa ? 'Reactivó la empresa' : 'Dio de baja la empresa' });
+  }
+  if (editados.length) await auditar(req, { ...base, accion: 'Editó la empresa', detalle: `Cambió: ${editados.join(', ')}` });
   res.json(publicaEmpresa(actualizada));
 });
 
@@ -120,6 +136,10 @@ adminRouter.put('/empresas/:id/credencial', async (req, res) => {
   } catch (e) {
     prueba = { ok: false, error: e.message };
   }
+  await auditar(req, {
+    accion: 'Cargó la KEY de Google', objetivo_tipo: 'empresa', objetivo_id: empresa.id, objetivo_nombre: empresa.nombre,
+    detalle: `Cuenta ${req.body.client_email} · conexión ${prueba.ok ? 'OK' : 'con error'}`,
+  });
   res.json({ empresa: publicaEmpresa(actualizada), prueba });
 });
 
@@ -151,6 +171,11 @@ adminRouter.post('/usuarios', async (req, res) => {
   const password = passwordTemporal();
   try {
     const nuevo = await crearUsuario({ usuario, nombre: nombre.trim(), rol, empresa_id, password_hash: hashPassword(password) });
+    const empresa = nuevo.empresa_id ? await empresaPorId(nuevo.empresa_id) : null;
+    await auditar(req, {
+      accion: 'Creó el usuario', objetivo_tipo: 'usuario', objetivo_id: nuevo.id, objetivo_nombre: nuevo.usuario,
+      detalle: rol === 'admin' ? 'Rol: admin' : `Rol: cliente de ${empresa?.nombre ?? nuevo.empresa_id}`,
+    });
     res.status(201).json({ usuario: nuevo, passwordTemporal: password });
   } catch (e) {
     if (/duplicate|unique/i.test(e.message)) return error(res, 409, 'Ya existe ese usuario');
@@ -170,7 +195,21 @@ adminRouter.patch('/usuarios/:id', async (req, res) => {
     Object.assign(cambios, { intentos_fallidos: 0, bloqueado_por_intentos: false, bloqueado_hasta: null });
   }
   if (nombre !== undefined && String(nombre).trim()) cambios.nombre = String(nombre).trim();
-  res.json(await actualizarUsuario(usuario.id, cambios));
+  const actualizado = await actualizarUsuario(usuario.id, cambios);
+
+  // Auditoría: bloqueo / desbloqueo (y si venía de un bloqueo automático) y cambio de nombre
+  const base = { objetivo_tipo: 'usuario', objetivo_id: usuario.id, objetivo_nombre: usuario.usuario };
+  const estabaBloqueado = !usuario.activo || bloqueoTemporalVigente(usuario);
+  if (activo === false && !estabaBloqueado) await auditar(req, { ...base, accion: 'Bloqueó al usuario' });
+  if (activo === true && estabaBloqueado) {
+    const detalle = usuario.bloqueado_por_intentos ? 'Estaba bloqueado por intentos fallidos'
+      : bloqueoTemporalVigente(usuario) ? 'Tenía un bloqueo temporal por intentos fallidos' : null;
+    await auditar(req, { ...base, accion: 'Desbloqueó al usuario', detalle });
+  }
+  if (cambios.nombre && cambios.nombre !== usuario.nombre) {
+    await auditar(req, { ...base, accion: 'Cambió el nombre', detalle: `De "${usuario.nombre}" a "${cambios.nombre}"` });
+  }
+  res.json(actualizado);
 });
 
 // Resetea la contraseña: genera una temporal nueva y la devuelve UNA vez
@@ -179,6 +218,7 @@ adminRouter.post('/usuarios/:id/resetear-password', async (req, res) => {
   if (!usuario) return error(res, 404, 'Usuario no encontrado');
   const password = passwordTemporal();
   await actualizarUsuario(usuario.id, { password_hash: hashPassword(password) });
+  await auditar(req, { accion: 'Reseteó la contraseña', objetivo_tipo: 'usuario', objetivo_id: usuario.id, objetivo_nombre: usuario.usuario });
   res.json({ passwordTemporal: password });
 });
 
@@ -186,4 +226,10 @@ adminRouter.post('/usuarios/:id/resetear-password', async (req, res) => {
 
 adminRouter.get('/accesos', async (_req, res) => {
   res.json(await listarAccesos(1000));
+});
+
+// ---- Auditoría (quién hizo qué cambio) ----
+
+adminRouter.get('/auditoria', async (_req, res) => {
+  res.json(await listarAuditoria(1000));
 });

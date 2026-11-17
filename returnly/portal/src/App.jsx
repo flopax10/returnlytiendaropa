@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
 import { calcularMetricas } from './metricas.js'
 import { calcularRecomendaciones } from './recomendaciones.js'
 import Ingresar from './pages/Ingresar.jsx'
 import Panel from './pages/Panel.jsx'
 import Admin from './pages/Admin.jsx'
+import Inactividad from './components/Inactividad.jsx'
 
 // Flujo:
 // - sin sesión -> pantalla de ingreso
@@ -15,12 +16,32 @@ export default function App() {
   const [empresaVista, setEmpresaVista] = useState(null) // empresa cuyo panel se está mirando
   const [panel, setPanel] = useState(null)
   const [error, setError] = useState('')
+  const [avisoIngreso, setAvisoIngreso] = useState('') // por qué se cerró la sesión (se muestra en el ingreso)
 
   useEffect(() => {
-    api('/sesion').then(entrar).catch(() => setSesion(null))
+    api('/sesion').then(entrar).catch((err) => {
+      if (err.inactividad) setAvisoIngreso(err.message)
+      setSesion(null)
+    })
   }, [])
 
+  // Sesión cerrada: por inactividad (en esta página o avisado por el backend) o porque venció
+  const cerrarSesion = useCallback(async (motivo) => {
+    await api('/logout', { body: {} }).catch(() => {})
+    setPanel(null)
+    setEmpresaVista(null)
+    setSesion(null)
+    setAvisoIngreso(motivo || 'Tu sesión se cerró. Volvé a ingresar.')
+  }, [])
+
+  useEffect(() => {
+    const alCerrar = (e) => cerrarSesion(e.detail)
+    window.addEventListener('returnly:sesion-cerrada', alCerrar)
+    return () => window.removeEventListener('returnly:sesion-cerrada', alCerrar)
+  }, [cerrarSesion])
+
   function entrar(s) {
+    setAvisoIngreso('')
     setSesion(s)
     setEmpresaVista(s.usuario.rol === 'cliente' ? s.empresa : null)
   }
@@ -47,7 +68,15 @@ export default function App() {
   const volverAlAdmin = sesion?.usuario.rol === 'admin' ? () => { setEmpresaVista(null); setPanel(null) } : null
 
   if (sesion === undefined) return null
-  if (!sesion) return <Ingresar onIngreso={entrar} />
+  if (!sesion) return <Ingresar onIngreso={entrar} aviso={avisoIngreso} />
+  return (
+    <>
+      <Inactividad onCerrar={cerrarSesion} />
+      {contenido()}
+    </>
+  )
+
+  function contenido() {
   if (!empresaVista) return <Admin usuario={sesion.usuario} onVerPanel={setEmpresaVista} onSalir={salir} />
   if (error) {
     return (
@@ -67,4 +96,5 @@ export default function App() {
     )
   }
   return <Panel empresa={panel.empresa} actualizado={panel.actualizado} metricas={panel.metricas} recomendaciones={panel.recomendaciones} onSalir={salir} onVolver={volverAlAdmin} />
+  }
 }

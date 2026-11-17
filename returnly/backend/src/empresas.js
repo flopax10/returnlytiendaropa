@@ -92,3 +92,27 @@ export async function registrarAcceso({ usuario_id, usuario_ingresado, exito, mo
 export const listarAccesos = (limite = 200) =>
   q(db.from('acceso').select('id, usuario_ingresado, exito, motivo, ip, user_agent, fecha, usuario(nombre, rol, empresa_id)')
     .order('fecha', { ascending: false }).limit(limite));
+
+// ---- Auditoría: quién hizo qué cambio y cuándo ----
+// actor = el usuario que hizo la acción (null = el sistema, por ejemplo un bloqueo automático).
+// Si falla el registro no se corta la acción: solo se avisa en el log del servidor.
+export async function registrarAuditoria({ actor, accion, objetivo_tipo, objetivo_id, objetivo_nombre, detalle, ip }) {
+  try {
+    await q(db.from('auditoria').insert({
+      actor_id: actor?.id ?? null,
+      actor_usuario: actor?.usuario ?? 'sistema',
+      accion,
+      objetivo_tipo,
+      objetivo_id: objetivo_id == null ? null : String(objetivo_id),
+      objetivo_nombre: objetivo_nombre ?? null,
+      detalle: detalle ? String(detalle).slice(0, 500) : null,
+      ip: ip ?? null,
+    }));
+  } catch (e) {
+    console.error('Auditoría', e.message);
+  }
+}
+
+export const listarAuditoria = (limite = 1000) =>
+  q(db.from('auditoria').select('id, fecha, actor_usuario, accion, objetivo_tipo, objetivo_id, objetivo_nombre, detalle, ip')
+    .order('fecha', { ascending: false }).limit(limite));

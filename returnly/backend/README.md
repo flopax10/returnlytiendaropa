@@ -27,7 +27,7 @@ Después levantá el panel (`returnly/portal`, `npm run dev`) y entrá a http://
 
 ## Datos en Supabase
 
-Tablas `empresa`, `usuario` y `acceso` (SQL en `returnly/supabase/003_empresas_usuarios_accesos.sql`).
+Tablas `empresa`, `usuario`, `acceso` y `auditoria` (SQL en `returnly/supabase/`, en orden).
 Tienen RLS activado **sin políticas** y sin permisos para los roles públicos: con la clave publicable no se
 pueden leer. Solo este backend accede, con la clave secreta (`SUPABASE_SECRET_KEY`).
 
@@ -50,7 +50,7 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 
 ## Seguridad
 
-- Sesión en cookie **httpOnly** firmada (8 horas). En cada pedido se verifica que el usuario siga activo: si el
+- Sesión en cookie **httpOnly** firmada (8 horas como máximo, se cierra a los 30 minutos sin uso). En cada pedido se verifica que el usuario siga activo: si el
   admin lo bloquea, pierde el acceso al instante.
 - Freno a la fuerza bruta por IP: 30 intentos fallidos cada 15 minutos.
 - **Bloqueo por usuario:** a los 5 intentos seguidos con contraseña incorrecta, un usuario de empresa queda
@@ -58,6 +58,11 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
   Returnly sin administradores). Desde el primer intento fallido la pantalla avisa cuántos intentos quedan, y al
   quinto avisa que el usuario se bloqueó. El contador se guarda en Supabase y vuelve a 0 al entrar bien o al desbloquear.
 - Cada intento de ingreso (bueno o fallido, con motivo, IP y navegador) queda en la tabla `acceso`.
+- **Auditoría:** cada cambio sobre empresas y usuarios (crear, editar, dar de baja, cargar la KEY, bloquear,
+  desbloquear, resetear contraseña, cambiar la propia contraseña y los bloqueos automáticos) queda en la tabla
+  `auditoria` con quién lo hizo, cuándo, sobre qué y desde qué IP. Se ve en Admin → Auditoría.
+- **Cierre por inactividad:** la sesión se cierra a los 30 minutos sin uso (y dura 8 horas como máximo). La página
+  avisa 2 minutos antes con un botón "Seguir conectado"; el backend también lo controla con la cookie firmada.
 - El cliente nunca puede pedir datos de otra empresa: el backend usa siempre la empresa de su usuario.
 
 ## Datos y costo
@@ -81,3 +86,4 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | GET/POST/PATCH | `/api/admin/usuarios` | admin | Listar, crear, bloquear usuarios |
 | POST | `/api/admin/usuarios/:id/resetear-password` | admin | Generar una contraseña temporal nueva |
 | GET | `/api/admin/accesos` | admin | Registro de los últimos 1000 ingresos |
+| GET | `/api/admin/auditoria` | admin | Últimos 1000 cambios hechos sobre empresas y usuarios |

@@ -54,6 +54,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
   const [empresas, setEmpresas] = useState([])
   const [usuarios, setUsuarios] = useState([])
   const [accesos, setAccesos] = useState([])
+  const [auditoria, setAuditoria] = useState([])
   const [fuentes, setFuentes] = useState([])
   const [mensaje, setMensaje] = useState(null)
   const [aviso, setAviso] = useState(null)
@@ -61,8 +62,8 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
   const avisar = (texto, error = false) => setMensaje({ texto, error })
   const cargar = async () => {
     try {
-      const [e, u, a, f] = await Promise.all([api('/admin/empresas'), api('/admin/usuarios'), api('/admin/accesos'), api('/admin/fuentes')])
-      setEmpresas(e); setUsuarios(u); setAccesos(a); setFuentes(f)
+      const [e, u, a, f, au] = await Promise.all([api('/admin/empresas'), api('/admin/usuarios'), api('/admin/accesos'), api('/admin/fuentes'), api('/admin/auditoria')])
+      setEmpresas(e); setUsuarios(u); setAccesos(a); setFuentes(f); setAuditoria(au)
     } catch (err) {
       avisar(err.message, true)
     }
@@ -99,7 +100,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
 
       <main className="contenido">
         <nav className="pestanas" role="tablist">
-          {[['empresas', 'Empresas'], ['usuarios', 'Usuarios'], ['accesos', 'Registro de accesos']].map(([id, texto]) => (
+          {[['empresas', 'Empresas'], ['usuarios', 'Usuarios'], ['accesos', 'Registro de accesos'], ['auditoria', 'Auditoría']].map(([id, texto]) => (
             <button key={id} role="tab" aria-selected={pestana === id} className={pestana === id ? 'activa' : ''} onClick={() => setPestana(id)}>{texto}</button>
           ))}
         </nav>
@@ -114,6 +115,7 @@ export default function Admin({ usuario, onVerPanel, onSalir }) {
           <Usuarios usuarios={usuarios} empresas={empresas} yo={usuario} accion={accion} setAviso={setAviso} nombreEmpresa={nombreEmpresa} />
         )}
         {pestana === 'accesos' && <Accesos accesos={accesos} empresas={empresas} nombreEmpresa={nombreEmpresa} onActualizar={cargar} />}
+        {pestana === 'auditoria' && <Auditoria registros={auditoria} onActualizar={cargar} />}
       </main>
     </div>
   )
@@ -411,6 +413,61 @@ function Accesos({ accesos, empresas, nombreEmpresa, onActualizar }) {
                 <td>{a.motivo}</td>
                 <td>{a.ip?.replace(/^::ffff:/, "")}</td>
                 <td>{navegador(a.user_agent)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+// ---- Auditoría: quién hizo qué cambio y cuándo ----
+
+const FILTROS_AUDITORIA = [
+  ['todas', 'Todas'],
+  ['usuario', 'Sobre usuarios'],
+  ['empresa', 'Sobre empresas'],
+  ['sistema', 'Automáticas (del sistema)'],
+]
+
+function Auditoria({ registros, onActualizar }) {
+  const [filtro, setFiltro] = useState('todas')
+  const pasa = (r) => filtro === 'todas' || (filtro === 'sistema' ? r.actor_usuario === 'sistema' : r.objetivo_tipo === filtro)
+  const visibles = registros.filter(pasa)
+  const cuantos = (f) => (f === 'todas' ? registros.length : registros.filter((r) => (f === 'sistema' ? r.actor_usuario === 'sistema' : r.objetivo_tipo === f)).length)
+  return (
+    <section className="tarjeta">
+      <header className="tarjeta-cabezal">
+        <div>
+          <h2>Auditoría</h2>
+          <p className="subtitulo">Cada cambio que se hace en empresas y usuarios: quién lo hizo, cuándo y sobre qué · {visibles.length} registros</p>
+        </div>
+        <div className="filtros">
+          <label className="filtro-accesos">
+            <span className="muted">Ver</span>
+            <select value={filtro} onChange={(e) => setFiltro(e.target.value)}>
+              {FILTROS_AUDITORIA.map(([id, texto]) => <option key={id} value={id}>{texto} ({cuantos(id)})</option>)}
+            </select>
+          </label>
+          <button className="boton-vista" onClick={onActualizar}>Actualizar</button>
+        </div>
+      </header>
+      <div className="tabla-scroll">
+        <table className="tabla">
+          <thead><tr><th>Fecha</th><th>Quién</th><th>Acción</th><th>Sobre</th><th>Detalle</th><th>IP</th></tr></thead>
+          <tbody>
+            {visibles.length === 0 && (
+              <tr><td colSpan={6} className="muted">Todavía no hay cambios registrados{filtro !== 'todas' ? ' para este filtro' : ''}.</td></tr>
+            )}
+            {visibles.map((r) => (
+              <tr key={r.id}>
+                <td className="num">{fecha(r.fecha)}</td>
+                <td>{r.actor_usuario === 'sistema' ? <span className="muted">Sistema</span> : r.actor_usuario}</td>
+                <td><strong>{r.accion}</strong></td>
+                <td>{r.objetivo_nombre}<br /><span className="muted">{r.objetivo_tipo === 'usuario' ? 'Usuario' : 'Empresa'}</span></td>
+                <td>{r.detalle ?? <span className="muted">—</span>}</td>
+                <td>{r.ip?.replace(/^::ffff:/, '') ?? '—'}</td>
               </tr>
             ))}
           </tbody>

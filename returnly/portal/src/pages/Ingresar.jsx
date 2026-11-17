@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 
-export default function Ingresar({ onIngreso }) {
+export default function Ingresar({ onIngreso, aviso }) {
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,6 +25,7 @@ export default function Ingresar({ onIngreso }) {
         <span className="logo">Returnly</span>
         <h1>Ingresá a tu panel</h1>
         <p className="subtitulo">Análisis del comportamiento de tus clientes antes de comprar.</p>
+        {aviso && !error && <p className="aviso" role="status">{aviso}</p>}
         <label>
           Usuario
           <input value={usuario} onChange={(e) => setUsuario(e.target.value)} autoComplete="username" autoFocus required />

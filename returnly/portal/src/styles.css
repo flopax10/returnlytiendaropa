@@ -262,3 +262,12 @@ label.boton-vista { display: inline-block; }
 
 /* ---- Filtro del registro de accesos ---- */
 .filtro-accesos { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+
+/* ---- Aviso de cierre de sesión por inactividad ---- */
+.aviso-inactividad {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50;
+  width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--serie);
+  border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+}
+.aviso-inactividad p { margin: 0; flex: 1 1 260px; line-height: 1.45; }

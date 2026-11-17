@@ -3,7 +3,8 @@ import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypt
 import { usuarioPorId } from './empresas.js';
 
 const COOKIE = 'returnly_sesion';
-const DURACION_MS = 8 * 3600 * 1000; // 8 horas
+const DURACION_MS = 8 * 3600 * 1000; // 8 horas como máximo, aunque se use todo el tiempo
+export const INACTIVIDAD_MS = 30 * 60 * 1000; // y se cierra a los 30 minutos sin uso
 
 function secreto() {
   const s = process.env.SESSION_SECRET;
@@ -29,37 +30,54 @@ function leerCookie(req) {
   return par?.slice(COOKIE.length + 1);
 }
 
-export function iniciarSesion(res, usuarioId) {
-  const datos = Buffer.from(JSON.stringify({ uid: usuarioId, exp: Date.now() + DURACION_MS })).toString('base64url');
+// La cookie guarda: uid (usuario), exp (vencimiento máximo) y act (último uso). Va firmada: no se puede alterar.
+function escribirCookie(res, sesion) {
+  const datos = Buffer.from(JSON.stringify(sesion)).toString('base64url');
   res.cookie(COOKIE, `${datos}.${firmar(datos)}`, {
     httpOnly: true, // el JavaScript de la página no la puede leer
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: DURACION_MS,
+    maxAge: Math.max(0, sesion.exp - Date.now()),
     path: '/',
   });
+}
+
+export function iniciarSesion(res, usuarioId) {
+  escribirCookie(res, { uid: usuarioId, exp: Date.now() + DURACION_MS, act: Date.now() });
 }
 
 export function cerrarSesion(res) {
   res.clearCookie(COOKIE, { path: '/' });
 }
 
-function idDeLaCookie(req) {
+// Devuelve la sesión de la cookie si la firma es válida, o null
+function sesionDeLaCookie(req) {
   const [datos, firma] = (leerCookie(req) ?? '').split('.');
   if (!datos || !firma) return null;
   const esperada = Buffer.from(firmar(datos));
   const recibida = Buffer.from(firma);
   if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) return null;
-  const { uid, exp } = JSON.parse(Buffer.from(datos, 'base64url').toString());
-  return exp > Date.now() ? uid : null;
+  try {
+    return JSON.parse(Buffer.from(datos, 'base64url').toString());
+  } catch {
+    return null;
+  }
 }
 
 // Middleware: exige sesión válida de un usuario ACTIVO (se revisa en la base en cada pedido, así un usuario
-// bloqueado pierde el acceso al instante) y lo deja en req.usuario
+// bloqueado pierde el acceso al instante) y lo deja en req.usuario.
+// Si pasaron más de 30 minutos sin usar el sistema, cierra la sesión. Si no, renueva el "último uso".
 export async function requiereSesion(req, res, next) {
-  const uid = idDeLaCookie(req);
-  const usuario = uid && await usuarioPorId(uid);
+  const sesion = sesionDeLaCookie(req);
+  const ahora = Date.now();
+  if (!sesion || !(sesion.exp > ahora)) return res.status(401).json({ error: 'Tenés que iniciar sesión' });
+  if (!(ahora - (sesion.act ?? 0) < INACTIVIDAD_MS)) {
+    cerrarSesion(res);
+    return res.status(401).json({ error: 'Tu sesión se cerró por inactividad. Volvé a ingresar.', inactividad: true });
+  }
+  const usuario = await usuarioPorId(sesion.uid);
   if (!usuario?.activo) return res.status(401).json({ error: 'Tenés que iniciar sesión' });
+  escribirCookie(res, { ...sesion, act: ahora });
   req.usuario = usuario;
   next();
 }

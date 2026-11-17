@@ -3,7 +3,7 @@ import express from 'express';
 import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereSesion } from './auth.js';
 import {
   usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso,
-  sumarIntentoFallido, limpiarIntentos, bloqueoTemporalVigente, MAX_INTENTOS, MINUTOS_BLOQUEO_ADMIN,
+  sumarIntentoFallido, limpiarIntentos, bloqueoTemporalVigente, MAX_INTENTOS, MINUTOS_BLOQUEO_ADMIN, registrarAuditoria,
 } from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { adminRouter } from './admin.js';
@@ -58,6 +58,13 @@ app.post('/api/login', async (req, res) => {
     if (usuario.activo) {
       const { intentos, bloqueo, hasta } = await sumarIntentoFallido(usuario);
       const quedan = MAX_INTENTOS - intentos;
+      if (bloqueo) {
+        await registrarAuditoria({
+          actor: null, ip, objetivo_tipo: 'usuario', objetivo_id: usuario.id, objetivo_nombre: usuario.usuario,
+          accion: bloqueo === 'admin' ? 'Bloqueo temporal automático' : 'Bloqueo automático',
+          detalle: bloqueo === 'admin' ? `${MAX_INTENTOS} intentos fallidos seguidos · ${MINUTOS_BLOQUEO_ADMIN} minutos` : `${MAX_INTENTOS} intentos fallidos seguidos`,
+        });
+      }
       if (bloqueo === 'cliente') {
         motivo += ` · usuario bloqueado (${MAX_INTENTOS} intentos fallidos)`;
         mensaje = MSJ_BLOQUEADO;
@@ -112,6 +119,10 @@ app.post('/api/cambiar-password', requiereSesion, async (req, res) => {
     return res.status(400).json({ error: 'La contraseña actual no es correcta' });
   }
   await actualizarUsuario(req.usuario.id, { password_hash: hashPassword(nueva) });
+  await registrarAuditoria({
+    actor: req.usuario, ip: req.ip, accion: 'Cambió su contraseña',
+    objetivo_tipo: 'usuario', objetivo_id: req.usuario.id, objetivo_nombre: req.usuario.usuario,
+  });
   res.json({ ok: true });
 });
 
