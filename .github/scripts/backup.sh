@@ -37,13 +37,16 @@ case "${1:-}" in
     sha256sum -c "$ARCHIVO.sha256"
     TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
     gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 -d "$ARCHIVO.dump.gpg" 3<<<"$BACKUP_PASSWORD" > "$TMP/base.dump"
-    # Los roles de Supabase a los que se les dan o quitan permisos
+    # El backup menciona roles propios de Supabase (anon, authenticated, supabase_admin…) en permisos y
+    # privilegios por defecto. En la base de prueba no existen: se crean todos los que aparezcan en el backup.
+    ROLES=$(pg_restore --schema-only -f - "$TMP/base.dump" \
+      | grep -oE '(TO|FROM|FOR ROLE|OWNER TO) "?[a-z_][a-z0-9_]*"?' | awk '{print $NF}' | tr -d '"' \
+      | grep -viE '^(public|current_user|session_user|current_role)$' | sort -u | tr '\n' ' ')
+    echo "Roles de Supabase que se crean en la base de prueba: $ROLES" >&2
+    for r in $ROLES; do
+      psql "$PRUEBA_DB_URL" -q -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$r') THEN CREATE ROLE \"$r\"; END IF; END \$\$;"
+    done
     psql "$PRUEBA_DB_URL" -q -v ON_ERROR_STOP=1 <<'SQL'
-DO $$ DECLARE r text; BEGIN
-  FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN EXECUTE format('CREATE ROLE %I', r); END IF;
-  END LOOP;
-END $$;
 DROP DATABASE IF EXISTS restaurada;
 CREATE DATABASE restaurada;
 SQL
