@@ -54,7 +54,7 @@ Navegador ──> Portal (React + Vite, Vercel)
 | [`returnly/backend`](returnly/backend) | API de Returnly. Su [README](returnly/backend/README.md) detalla roles, seguridad y rutas |
 | [`returnly/supabase`](returnly/supabase) | SQL de las tablas de Supabase, en orden |
 | [`returnly/docs`](returnly/docs) | Documentación: [modelo entidad-relación (MER)](returnly/docs/MER-Returnly.pdf) en PDF y [en GitHub](returnly/docs/MER.md) |
-| [`.github/workflows`](.github/workflows) | Tarea diaria que mantiene activo el proyecto de Supabase |
+| [`.github/workflows`](.github/workflows) | Tareas automáticas: backup diario cifrado de la base y ping para que Supabase no se pause |
 
 ## Datos de las empresas de ejemplo
 
@@ -88,3 +88,5 @@ npm run dev               # http://localhost:5174
 - Supabase pausa los proyectos gratuitos que pasan unos días sin uso. Para evitarlo, la tarea
   [`mantener-supabase.yml`](.github/workflows/mantener-supabase.yml) consulta la base una vez por día. Se puede
   correr a mano desde la pestaña **Actions** → *Mantener Supabase activo* → **Run workflow**.
+- **Backup:** la base se exporta, se cifra y se verifica con una restauración de prueba todos los días
+  ([`backup-base.yml`](.github/workflows/backup-base.yml)). Esquema completo y cómo restaurar en [`returnly/docs/BACKUP.md`](returnly/docs/BACKUP.md).

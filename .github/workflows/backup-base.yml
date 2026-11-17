@@ -1,0 +1,90 @@
+# Backup diario de la base de Returnly (Supabase).
+# 1. Exporta el esquema public con pg_dump 17 (misma versión que Supabase) por el "Session pooler" (IPv4).
+# 2. Lo cifra con AES-256 (gpg) usando BACKUP_PASSWORD: sin esa contraseña el archivo es ilegible.
+# 3. Lo RESTAURA en un PostgreSQL vacío y comprueba que estén todas las filas (si no, la tarea falla y GitHub avisa).
+# 4. Guarda el archivo cifrado como artifact de la tarea durante 30 días.
+# Esquema completo y cómo restaurar: returnly/docs/BACKUP.md
+name: Backup de la base
+
+on:
+  schedule:
+    - cron: '23 6 * * *' # todos los días, 3:23 de Uruguay
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-base
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      prueba: # PostgreSQL vacío y descartable, solo para la restauración de prueba
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: prueba
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Revisar que estén cargados los secretos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSWORD" ]; then
+            echo "::error::Faltan los secretos SUPABASE_DB_URL y/o BACKUP_PASSWORD (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          if [ "${#BACKUP_PASSWORD}" -lt 20 ]; then
+            echo "::error::BACKUP_PASSWORD tiene que tener 20 caracteres o más."
+            exit 1
+          fi
+
+      - name: Instalar el cliente de PostgreSQL 17 (misma versión que Supabase)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Exportar y cifrar la base
+        id: exportar
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: |
+          export ARCHIVO="returnly-base-$(date -u +%Y-%m-%d_%H%M)"
+          echo "ARCHIVO=$ARCHIVO" >> "$GITHUB_ENV"
+          pg_dump --version
+          .github/scripts/backup.sh exportar
+
+      - name: Restauración de prueba (comprueba que el backup sirve)
+        env:
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+          PRUEBA_DB_URL: postgresql://postgres:prueba@localhost:5432/postgres
+        run: |
+          echo "## Backup $ARCHIVO" >> "$GITHUB_STEP_SUMMARY"
+          .github/scripts/backup.sh verificar | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar el backup cifrado (30 días)
+        if: always() && steps.exportar.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: |
+            ${{ env.ARCHIVO }}.dump.gpg
+            ${{ env.ARCHIVO }}.sha256
+          retention-days: 30
+          if-no-files-found: error
