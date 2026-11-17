@@ -1,6 +1,7 @@
 // Empresas, usuarios y registro de accesos (tablas de Supabase). Lo que sale de acá hacia el navegador
 // pasa por las funciones "publica..." para no mandar nunca contraseñas ni KEY.
 import { db, q } from './db.js';
+import { REGLAS } from './reglas.js';
 import { encriptar, desencriptar } from './cifrado.js';
 
 // ---- Empresas ----
@@ -54,8 +55,8 @@ export async function actualizarUsuario(id, cambios) {
 
 // ---- Bloqueo por intentos fallidos ----
 
-export const MAX_INTENTOS = 5;
-export const MINUTOS_BLOQUEO_ADMIN = 15;
+export const MAX_INTENTOS = REGLAS.maxIntentos;
+export const MINUTOS_BLOQUEO_ADMIN = REGLAS.minutosBloqueoAdmin;
 
 export const bloqueoTemporalVigente = (usuario) =>
   Boolean(usuario?.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > new Date());

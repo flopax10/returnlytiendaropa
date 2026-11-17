@@ -1,4 +1,4 @@
-import { num, compacto, usd, pct, fechaCorta, DIAS_SEMANA } from '../metricas.js'
+import { num, compacto, usd, pct, fechaCorta, DIAS_SEMANA } from '../formato.js'
 import { Tarjeta, Tabla, Indicador, LineaTiempo, Barras, MapaCalor } from '../components/graficos.jsx'
 import CambiarPassword from '../components/CambiarPassword.jsx'
 import Recomendaciones from './Recomendaciones.jsx'
@@ -87,9 +87,9 @@ export default function Panel({ empresa, actualizado, metricas, recomendaciones,
               filas: pasosEmbudo,
             }}>
             <Barras
-              filas={pasosEmbudo.map((p) => ({ etiqueta: p.nombre, valor: p.usuarios, detalle: `${pct(p.delAnterior)} del paso anterior` }))}
+              filas={pasosEmbudo.map((p) => ({ etiqueta: p.nombre, valor: p.usuarios, delTotal: p.delTotal, detalle: `${pct(p.delAnterior)} del paso anterior` }))}
               formato={num}
-              textoValor={(f) => `${num(f.valor)} · ${pct(f.valor / pasosEmbudo[0].usuarios)}`} />
+              textoValor={(f) => `${num(f.valor)} · ${pct(f.delTotal)}`} />
           </Tarjeta>
 
           <Tarjeta titulo="Usuarios por día" subtitulo="Usuarios únicos de cada día"

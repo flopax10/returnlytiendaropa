@@ -2,7 +2,7 @@
 // Reglas: un solo color de datos (azul) por gráfico, líneas de 2px, barras de <=24px con punta redondeada,
 // grilla en línea fina, tooltip al pasar el mouse o con el teclado, y cada gráfico tiene su vista de tabla.
 import { useEffect, useRef, useState } from 'react'
-import { fechaCorta } from '../metricas.js'
+import { fechaCorta } from '../formato.js'
 
 // Ancho real del contenedor, para dibujar el SVG a su tamaño (sin estirar el texto)
 function useAncho() {

@@ -41,6 +41,11 @@ Navegador ──> Portal (React + Vite, Vercel)
                  └──> BigQuery: datos de comportamiento de cada empresa, con SU KEY de Google
 ```
 
+- **Capas bien separadas:** el **portal** solo muestra (pantallas, gráficos, formato de números). El **backend** tiene
+  toda la lógica: permisos, acceso a la base, consultas a BigQuery y la **capa de negocio**
+  ([`backend/src/negocio`](returnly/backend/src/negocio)), que calcula las métricas y las recomendaciones.
+- **Cada regla de negocio en un solo lugar:** [`backend/src/reglas.js`](returnly/backend/src/reglas.js) (intentos antes
+  del bloqueo, minutos de inactividad, estados del seguimiento…). El portal las recibe con la sesión, no las repite.
 - El navegador **nunca** habla directo con Supabase ni con BigQuery: todo pasa por el backend.
 - Las tablas de Supabase tienen RLS activado y sin políticas: con la clave pública no se pueden leer.
 - Contraseñas hasheadas (scrypt), KEY de Google encriptadas (AES-256-GCM), sesión en cookie httpOnly firmada que

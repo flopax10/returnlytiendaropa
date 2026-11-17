@@ -79,7 +79,8 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | POST | `/api/logout` | todos | Cierra la sesión |
 | GET | `/api/sesion` | logueado | Usuario y empresa de la sesión |
 | POST | `/api/cambiar-password` | logueado | Cambia la propia contraseña (pide la actual) |
-| GET | `/api/datos` | logueado | Datos de su empresa (el admin elige con `?empresa=id`) |
+| GET | `/api/datos` | logueado | Métricas y recomendaciones de su empresa, ya calculadas (el admin elige con `?empresa=id`) |
+| GET | `/api/sesion` | logueado | Usuario, empresa y las reglas de negocio (`reglas.js`) |
 | GET/POST/PATCH | `/api/admin/empresas` | admin | Listar, crear, editar, dar de baja empresas |
 | PUT | `/api/admin/empresas/:id/credencial` | admin | Cargar o reemplazar la KEY (se encripta y se prueba) |
 | POST | `/api/admin/empresas/:id/probar` | admin | Probar la conexión sin gastar cuota |
@@ -90,3 +91,19 @@ desde el admin y cargarle su KEY. Un formato nuevo = un archivo nuevo en `src/fu
 | PUT | `/api/seguimiento/:recomendacion` | cliente | Marca `estado` (pendiente / en_curso / hecha) y/o `voto` (1, -1 o null) |
 | GET | `/api/admin/seguimiento` | admin | Resumen por empresa: hechas, en curso, 👍 y 👎 |
 | GET | `/api/admin/auditoria` | admin | Últimos 1000 cambios hechos sobre empresas y usuarios |
+
+## Cómo está organizado el código
+
+| Archivo / carpeta | Capa | Qué hace |
+|---|---|---|
+| `src/index.js` | Rutas (API) | Recibe los pedidos del portal, valida la sesión y los permisos, y responde. |
+| `src/admin.js` | Rutas (API) | Rutas del Admin de seguridad (solo rol admin). |
+| `src/auth.js` | Seguridad | Contraseñas (scrypt), cookie de sesión firmada, cierre por inactividad. |
+| `src/reglas.js` | **Reglas de negocio** | **Único lugar** de las reglas: intentos antes del bloqueo, minutos de bloqueo e inactividad, duración de la sesión, largo mínimo de contraseña, estados del seguimiento. Se mandan al portal con la sesión. |
+| `src/negocio/` | **Capa de negocio** | Cálculo de las métricas del panel (`metricas.js`), de las recomendaciones del Feedback (`recomendaciones.js`) y de los links a "cómo se veía en la web" (`web.js`). `index.js` arma la respuesta de `/api/datos`. |
+| `src/empresas.js` | Acceso a datos | Todas las consultas a Supabase (empresas, usuarios, accesos, auditoría, seguimiento). |
+| `src/datos.js`, `src/fuentes/` | Acceso a datos | Consultas a BigQuery según el tipo de fuente (GA4, TheLook) y su caché temporal. |
+| `src/cifrado.js` | Seguridad | Cifrado AES-256-GCM de las KEY de Google. |
+
+El portal (`returnly/portal`) **no calcula ni accede a la base**: `/api/datos` le devuelve las métricas y las
+recomendaciones ya calculadas, y el portal solo les da formato y las dibuja.

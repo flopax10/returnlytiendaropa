@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
-import { calcularMetricas } from './metricas.js'
-import { calcularRecomendaciones } from './recomendaciones.js'
+import { conFechas } from './formato.js'
+import { ReglasContext } from './reglas.js'
 import Ingresar from './pages/Ingresar.jsx'
 import Panel from './pages/Panel.jsx'
 import Admin from './pages/Admin.jsx'
@@ -53,10 +53,8 @@ export default function App() {
     setError('')
     const ruta = sesion.usuario.rol === 'admin' ? `/datos?empresa=${encodeURIComponent(empresaVista.id)}` : '/datos'
     api(ruta)
-      .then((r) => {
-        const metricas = calcularMetricas(r.datos)
-        setPanel({ empresa: r.empresa, actualizado: r.actualizado, metricas, recomendaciones: calcularRecomendaciones(r.datos, metricas) })
-      })
+      // El backend manda las métricas y recomendaciones ya calculadas: acá solo se muestran
+      .then((r) => setPanel({ empresa: r.empresa, actualizado: r.actualizado, metricas: conFechas(r.metricas), recomendaciones: r.recomendaciones }))
       .catch((err) => (err.status === 401 ? setSesion(null) : setError(err.message)))
   }, [empresaVista])
 
@@ -71,11 +69,11 @@ export default function App() {
   if (sesion === undefined) return null
   if (!sesion) return <><NuevaVersion conSesion={false} /><Ingresar onIngreso={entrar} aviso={avisoIngreso} /></>
   return (
-    <>
+    <ReglasContext.Provider value={sesion.reglas ?? null}>
       <NuevaVersion conSesion />
       <Inactividad onCerrar={cerrarSesion} />
       {contenido()}
-    </>
+    </ReglasContext.Provider>
   )
 
   function contenido() {

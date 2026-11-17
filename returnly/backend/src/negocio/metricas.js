@@ -1,19 +1,18 @@
-// Métricas del panel: se calculan a partir de los datos GA4 que manda el backend (/api/datos).
+// Métricas del panel de cada empresa (capa de negocio, backend). Se calculan acá, a partir de los datos que trae
+// BigQuery, y el portal solo las muestra. Los formatos de número se usan para armar los textos de las sugerencias.
 import { crearBuscadorWeb } from './web.js'
 
 // ---- Formatos ----
 export const num = (n) => Math.round(n).toLocaleString('es-UY')
-export const compacto = (n) => new Intl.NumberFormat('es-UY', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 export const usd = (n) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 export const pct = (x, decimales = 1) => `${(x * 100).toLocaleString('es-UY', { maximumFractionDigits: decimales })} %`
 const div = (a, b) => (b ? a / b : 0)
 const aFecha = (s) => new Date(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8)))
-export const fechaCorta = (d) => d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' })
 
 // Nombres que vienen ofuscados por Google en el dataset de prueba
 const limpiar = (s) => ({ '<Other>': 'Otros', '(data deleted)': 'Dato borrado', '(none)': 'ninguno', '(direct)': 'directo' }[s] ?? s)
 
-export const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export function calcularMetricas(datos) {
   const { resumen, embudo, diario, productos, categorias, abandono, dispositivos, fuentes, paises, dia_hora: diaHora } = datos

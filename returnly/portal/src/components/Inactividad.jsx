@@ -1,20 +1,23 @@
-// Cierre de sesión por inactividad: a los 30 minutos sin usar la página se cierra la sesión.
-// 2 minutos antes aparece un aviso para seguir conectado. Mientras la persona usa la página
+// Cierre de sesión por inactividad: tras los minutos sin uso que fija el backend (reglas) se cierra la sesión,
+// y unos minutos antes aparece un aviso para seguir conectado. Mientras la persona usa la página
 // (mueve el mouse, escribe, toca la pantalla), se le avisa al backend para que no cierre la sesión.
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
+import { useReglas } from '../reglas.js'
 
-const LIMITE_MS = 30 * 60 * 1000
-const AVISO_MS = 2 * 60 * 1000
 const PING_MS = 60 * 1000 // como mucho un aviso al backend por minuto
 const EVENTOS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart']
 
 export default function Inactividad({ onCerrar }) {
+  const reglas = useReglas()
+  const LIMITE_MS = (reglas?.minutosInactividad ?? 0) * 60 * 1000
+  const AVISO_MS = (reglas?.minutosAvisoInactividad ?? 0) * 60 * 1000
   const ultimoUso = useRef(Date.now())
   const ultimoPing = useRef(Date.now())
   const [restante, setRestante] = useState(null) // ms que faltan, solo mientras se muestra el aviso
 
   useEffect(() => {
+    if (!LIMITE_MS) return // sin reglas no hay reloj en pantalla (el backend igual cierra la sesión)
     const cerrarSiVencio = (err) => { if (err.inactividad || err.status === 401) onCerrar(err.message) }
     const usar = () => {
       // Si la compu estuvo suspendida o la pestaña quedó quieta más del límite, se cierra igual
@@ -39,7 +42,7 @@ export default function Inactividad({ onCerrar }) {
       EVENTOS.forEach((e) => window.removeEventListener(e, usar))
       clearInterval(reloj)
     }
-  }, [onCerrar])
+  }, [onCerrar, LIMITE_MS, AVISO_MS])
 
   if (restante === null) return null
   const segundos = Math.ceil(restante / 1000)

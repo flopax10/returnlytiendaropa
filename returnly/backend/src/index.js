@@ -7,6 +7,8 @@ import {
   seguimientoDe, guardarSeguimiento,
 } from './empresas.js';
 import { obtenerDatos } from './datos.js';
+import { panelDeEmpresa } from './negocio/index.js';
+import { REGLAS } from './reglas.js';
 import { adminRouter } from './admin.js';
 import { copiaMasCercana, fechaMedia } from './archivo.js';
 
@@ -20,7 +22,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 async function sesionPublica(usuario) {
   const empresa = usuario.empresa_id ? await empresaPorId(usuario.empresa_id) : null;
   const { id, usuario: nombreUsuario, nombre, rol } = usuario;
-  return { usuario: { id, usuario: nombreUsuario, nombre, rol }, empresa: empresa && publicaEmpresa(empresa) };
+  // Las reglas viajan con la sesión: el portal las muestra (avisos, límites) sin tenerlas repetidas
+  return { usuario: { id, usuario: nombreUsuario, nombre, rol }, empresa: empresa && publicaEmpresa(empresa), reglas: REGLAS };
 }
 
 // Freno a la fuerza bruta por IP (además del bloqueo por usuario): hasta 30 intentos fallidos cada 15 minutos
@@ -114,7 +117,7 @@ app.get('/api/sesion', requiereSesion, async (req, res) => {
 app.post('/api/cambiar-password', requiereSesion, async (req, res) => {
   const actual = String(req.body?.actual ?? '').trim();
   const nueva = String(req.body?.nueva ?? '').trim();
-  if (nueva.length < 10) return res.status(400).json({ error: 'La contraseña nueva tiene que tener al menos 10 caracteres' });
+  if (nueva.length < REGLAS.largoMinimoPassword) return res.status(400).json({ error: `La contraseña nueva tiene que tener al menos ${REGLAS.largoMinimoPassword} caracteres` });
   const completo = await usuarioParaLogin(req.usuario.usuario);
   if (!verificarPassword(actual, completo.password_hash)) {
     return res.status(400).json({ error: 'La contraseña actual no es correcta' });
@@ -127,14 +130,16 @@ app.post('/api/cambiar-password', requiereSesion, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Datos para los dashboards: el cliente ve los de SU empresa; el admin elige cuál (?empresa=id)
+// Panel de una empresa: métricas y recomendaciones YA CALCULADAS (capa de negocio en src/negocio/).
+// El cliente ve las de SU empresa; el admin elige cuál (?empresa=id)
 app.get('/api/datos', requiereSesion, async (req, res) => {
   const id = req.usuario.rol === 'admin' ? req.query.empresa : req.usuario.empresa_id;
   const empresa = id && await empresaPorId(String(id));
   if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
   if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
   const { actualizado, datos } = await obtenerDatos(empresa);
-  res.json({ empresa: publicaEmpresa(empresa), actualizado, datos });
+  // El navegador recibe los resultados ya calculados (métricas y recomendaciones), no los datos crudos
+  res.json({ empresa: publicaEmpresa(empresa), actualizado, ...panelDeEmpresa(datos) });
 });
 
 // Copia guardada en el Internet Archive de una página de la tienda (para "cómo se veía en la web").
@@ -157,7 +162,7 @@ app.get('/api/web-copia', requiereSesion, async (req, res) => {
 
 // Seguimiento de recomendaciones: la empresa marca cada una como pendiente / en curso / hecha y la vota 👍 / 👎.
 // El admin lo puede ver (?empresa=id) pero no cambiarlo: es la opinión de la empresa.
-const ESTADOS = ['pendiente', 'en_curso', 'hecha'];
+const ESTADOS = REGLAS.estadosSeguimiento;
 
 app.get('/api/seguimiento', requiereSesion, async (req, res) => {
   const id = req.usuario.rol === 'admin' ? req.query.empresa : req.usuario.empresa_id;
@@ -175,7 +180,7 @@ app.put('/api/seguimiento/:recomendacion', requiereSesion, async (req, res) => {
   const { estado, voto } = req.body ?? {};
   const cambios = {};
   if (estado !== undefined) {
-    if (!ESTADOS.includes(estado)) return res.status(400).json({ error: 'El estado es pendiente, en_curso o hecha' });
+    if (!ESTADOS.includes(estado)) return res.status(400).json({ error: `El estado es ${ESTADOS.join(', ')}` });
     cambios.estado = estado;
   }
   if (voto !== undefined) {

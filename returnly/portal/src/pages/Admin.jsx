@@ -2,6 +2,7 @@
 // empresas y sus KEY de Google, usuarios y registro de accesos.
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
+import { useReglas } from '../reglas.js'
 import CambiarPassword from '../components/CambiarPassword.jsx'
 
 const fecha = (iso) => (iso ? new Date(iso).toLocaleString('es-UY', { dateStyle: 'short', timeStyle: 'short' }) : '—')
@@ -272,18 +273,18 @@ function Empresas({ empresas, fuentes, seguimiento, accion, onVerPanel }) {
 
 // ---- Usuarios ----
 
-// Bloqueo automático: a los 5 intentos fallidos el cliente queda bloqueado y el admin, 15 minutos
-const MAX_INTENTOS = 5
+// Bloqueo automático por intentos fallidos (la cantidad y los minutos los fija el backend: reglas)
 const temporal = (u) => Boolean(u.bloqueado_hasta && new Date(u.bloqueado_hasta) > new Date())
-function estadoBloqueo(u) {
+function estadoBloqueo(u, maxIntentos) {
   if (temporal(u)) {
     const hora = new Date(u.bloqueado_hasta).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', hour12: false })
     return `Bloqueado hasta las ${hora} (intentos fallidos)`
   }
-  return u.bloqueado_por_intentos ? `Bloqueado por ${MAX_INTENTOS} intentos fallidos` : 'Bloqueado'
+  return u.bloqueado_por_intentos ? `Bloqueado por ${maxIntentos ?? ''} intentos fallidos`.replace('por  ', 'por ') : 'Bloqueado'
 }
 
 function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
+  const maxIntentos = useReglas()?.maxIntentos
   const vacio = { usuario: '', nombre: '', rol: 'cliente', empresa_id: '' }
   const [nuevo, setNuevo] = useState(vacio)
 
@@ -320,9 +321,9 @@ function Usuarios({ usuarios, empresas, yo, accion, setAviso, nombreEmpresa }) {
                   <td>{u.rol === 'admin' ? 'Admin' : 'Cliente'}</td>
                   <td>{u.empresa_id ? nombreEmpresa(u.empresa_id) : '—'}</td>
                   <td>
-                    <Estado ok={u.activo && !temporal(u)} si="Activo" no={estadoBloqueo(u)} />
+                    <Estado ok={u.activo && !temporal(u)} si="Activo" no={estadoBloqueo(u, maxIntentos)} />
                     {u.activo && !temporal(u) && u.intentos_fallidos > 0 && (
-                      <><br /><span className="muted">{u.intentos_fallidos} de {MAX_INTENTOS} intentos fallidos</span></>
+                      <><br /><span className="muted">{u.intentos_fallidos}{maxIntentos ? ` de ${maxIntentos}` : ''} intentos fallidos</span></>
                     )}
                   </td>
                   <td>{fecha(u.ultimo_acceso)}</td>

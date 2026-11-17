@@ -1,6 +1,6 @@
 // Recomendaciones "bajadas a tierra": cada una responde una pregunta del negocio con un hallazgo concreto,
-// qué hacer y un impacto estimado. Se calculan con los mismos datos del panel (backend /api/datos) más dos
-// consultas extra: curiosidad por producto y embudo por dispositivo.
+// qué hacer y un impacto estimado (capa de negocio, backend). Se calculan con los mismos datos del panel más dos
+// consultas extra: curiosidad por producto y embudo por dispositivo. El portal solo las muestra.
 import { num, usd, pct } from './metricas.js'
 import { crearBuscadorWeb } from './web.js'
 

@@ -5,11 +5,14 @@ import { useEffect, useState } from 'react'
 import { Tabla } from '../components/graficos.jsx'
 import VistaWeb from '../components/VistaWeb.jsx'
 import { api } from '../api.js'
+import { useReglas } from '../reglas.js'
 
-const ESTADOS = [['pendiente', 'Pendiente'], ['en_curso', 'En curso'], ['hecha', 'Hecha']]
+// Cómo se muestra cada estado (los estados válidos los define el backend)
+const NOMBRE_ESTADO = { pendiente: 'Pendiente', en_curso: 'En curso', hecha: 'Hecha' }
 
 // Estado y voto de una recomendación
 function Seguimiento({ seg, soloLectura, onCambiar }) {
+  const estados = useReglas()?.estadosSeguimiento ?? []
   const estado = seg?.estado ?? 'pendiente'
   const voto = seg?.voto ?? null
   return (
@@ -17,10 +20,10 @@ function Seguimiento({ seg, soloLectura, onCambiar }) {
       <div className="seguimiento-grupo">
         <span className="seguimiento-etiqueta">{soloLectura ? 'Estado (lo marca la empresa)' : 'Tu avance'}</span>
         <div className="segmentado" role="group" aria-label="Estado de la recomendación">
-          {ESTADOS.map(([id, texto]) => (
+          {estados.map((id) => (
             <button key={id} type="button" className={`segmento segmento-${id}`} aria-pressed={estado === id}
               disabled={soloLectura} onClick={() => estado !== id && onCambiar({ estado: id })}>
-              {texto}
+              {NOMBRE_ESTADO[id] ?? id}
             </button>
           ))}
         </div>

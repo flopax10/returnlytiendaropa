@@ -1,10 +1,11 @@
 // Login: contraseñas con scrypt y sesión en una cookie firmada con HMAC (sin dependencias).
 import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { REGLAS } from './reglas.js';
 import { usuarioPorId } from './empresas.js';
 
 const COOKIE = 'returnly_sesion';
-const DURACION_MS = 8 * 3600 * 1000; // 8 horas como máximo, aunque se use todo el tiempo
-export const INACTIVIDAD_MS = 30 * 60 * 1000; // y se cierra a los 30 minutos sin uso
+const DURACION_MS = REGLAS.horasSesion * 3600 * 1000; // duración máxima, aunque se use todo el tiempo
+export const INACTIVIDAD_MS = REGLAS.minutosInactividad * 60 * 1000; // y se cierra tras ese tiempo sin uso
 
 function secreto() {
   const s = process.env.SESSION_SECRET;
