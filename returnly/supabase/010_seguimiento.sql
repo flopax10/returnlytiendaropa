@@ -14,3 +14,6 @@ create table seguimiento (
 -- Igual que las otras tablas: RLS sin políticas, solo el backend (clave secreta) puede leer y escribir.
 alter table seguimiento enable row level security;
 revoke all on seguimiento from anon, authenticated;
+
+-- Ajuste de nombre (ya aplicado): la FK de auditoria quedó con el nombre viejo de la columna.
+alter table auditoria rename constraint auditoria_admin_id_fkey to auditoria_actor_id_fkey;

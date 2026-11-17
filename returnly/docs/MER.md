@@ -1,7 +1,7 @@
 # MER de Returnly
 
 Modelo Entidad-Relación de la base de datos de Returnly (PostgreSQL en Supabase), tal como está hoy.
-La versión completa y explicada en simple está en **[MER-Returnly.pdf](MER-Returnly.pdf)** (9 páginas).
+El diagrama completo (notación pata de gallo, A3) está en **[MER-Returnly.pdf](MER-Returnly.pdf)**.
 El PDF se genera desde [MER-fuente.html](MER-fuente.html).
 
 ```mermaid

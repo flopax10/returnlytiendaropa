@@ -4,591 +4,243 @@
 <meta charset="utf-8">
 <title>MER · Returnly</title>
 <style>
-  @page { size: A4 landscape; margin: 0; }
-  :root {
-    --azul: #2b6fd6; --azul-claro: #eaf2fd; --azul-borde: #b9d2f6;
-    --verde: #2f855a; --verde-claro: #e8f5ee; --ambar: #b7791f; --ambar-claro: #fdf4e3;
-    --gris: #5b6472; --gris-claro: #f4f5f7; --borde: #dfe3e8; --texto: #1d2430; --suave: #6b7480;
-    --rojo: #c0392b;
-  }
+  @page { size: A3 landscape; margin: 0; }
+  :root { --azul: #1f5fbf; --azul-claro: #eaf2fd; --borde: #cfd6df; --texto: #1b2230; --gris: #5d6673; --suave: #8a929d; --ambar: #9a6412; --violeta: #6b46c1; --verde: #2f7a50; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #fff; }
-  body { font-family: Inter, "DejaVu Sans", sans-serif; color: var(--texto); font-size: 10pt; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  code, .mono { font-family: "DejaVu Sans Mono", monospace; font-size: .92em; }
-  .pagina { width: 297mm; height: 210mm; padding: 13mm 16mm 12mm; position: relative; page-break-after: always; overflow: hidden; }
-  .pagina:last-child { page-break-after: auto; }
-  .pie { position: absolute; right: 16mm; bottom: 7mm; font-size: 7.5pt; color: #9aa2ad; }
-  .pie-izq { position: absolute; left: 16mm; bottom: 7mm; font-size: 7.5pt; color: #9aa2ad; }
-  .chip { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; background: var(--gris-claro); color: var(--gris); border: 1px solid var(--borde); }
-  .chip.azul { background: var(--azul-claro); color: var(--azul); border-color: var(--azul-borde); }
-  .chip.verde { background: var(--verde-claro); color: var(--verde); border-color: #b7dfc7; }
-  h1 { font-size: 30pt; line-height: 1.05; margin: 0 0 4mm; letter-spacing: -.02em; }
-  h2 { font-size: 16.5pt; margin: 2.5mm 0 1.5mm; letter-spacing: -.01em; }
-  .bajada { color: var(--gris); margin: 0 0 5mm; font-size: 10pt; max-width: 250mm; }
-  .bajada b { color: var(--texto); }
-  .tarjeta { border: 1px solid var(--borde); border-radius: 3mm; padding: 4mm 5mm; background: #fff; }
-  .tarjeta h3 { margin: 0 0 1.5mm; font-size: 10.5pt; }
-  .tarjeta p { margin: 0; color: #3a4350; }
-  .gris { background: #fafbfc; }
-  .grilla2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
-  .grilla3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; }
-  .muted { color: var(--suave); }
+  html, body { margin: 0; background: #fff; }
+  body { font-family: Inter, "DejaVu Sans", sans-serif; color: var(--texto); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .hoja { width: 420mm; height: 297mm; padding: 11mm 14mm 0; position: relative; overflow: hidden; }
+  .cabezal { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--texto); padding-bottom: 3mm; }
+  .cabezal h1 { margin: 0; font-size: 21pt; letter-spacing: -.01em; }
+  .cabezal h1 span { color: var(--azul); }
+  .cabezal p { margin: 1mm 0 0; font-size: 9pt; color: var(--gris); }
+  .meta { text-align: right; font-size: 8.2pt; color: var(--gris); line-height: 1.5; }
+  .meta b { color: var(--texto); }
 
-  /* ---- Portada ---- */
-  .portada { display: grid; grid-template-columns: 1.05fr 1fr; gap: 12mm; height: 100%; align-items: center; }
-  .marca { color: var(--azul); font-weight: 800; font-size: 13pt; margin-bottom: 8mm; }
-  .que-es { margin-top: 8mm; background: var(--gris-claro); border-radius: 3mm; padding: 5mm 6mm; }
-  .que-es h3 { margin: 0 0 2mm; font-size: 11pt; }
-  .leyenda { border: 1px solid var(--borde); border-radius: 3mm; padding: 5mm 6mm; }
-  .leyenda h3 { margin: 0 0 3mm; font-size: 11pt; }
-  .ley { display: grid; grid-template-columns: 13mm 1fr; gap: 2mm 3mm; align-items: start; margin-bottom: 2.6mm; }
-  .ley b { display: block; font-size: 9.5pt; }
-  .ley span { font-size: 8.6pt; color: var(--gris); }
-  .ley .card-num { color: #fff; font-size: 7.5pt; }
-  .ley .u-badge { color: #6b46c1; font-size: 6.5pt; }
-  .ley .regla-badge { color: var(--ambar); font-size: 6.5pt; }
-  .simbolo { display: flex; align-items: center; justify-content: center; height: 7mm; font-size: 11pt; }
-  .card-num { display: inline-flex; width: 5.5mm; height: 5.5mm; border-radius: 50%; background: var(--azul); color: #fff; font-size: 7.5pt; font-weight: 700; align-items: center; justify-content: center; }
-  .linea-ej { width: 11mm; height: 0; border-top: 2px solid var(--azul); }
-  .linea-ej.punteada { border-top-style: dashed; }
-  .regla-badge { display: inline-block; font-size: 6.5pt; font-weight: 700; color: var(--ambar); border: 1px solid #ecd3a4; background: var(--ambar-claro); padding: 0 4px; border-radius: 3px; }
-  .u-badge { display: inline-block; font-size: 6.5pt; font-weight: 700; color: #6b46c1; border: 1px solid #d6c8f5; background: #f4f0fd; padding: 0 4px; border-radius: 3px; }
+  .diagrama { position: relative; width: 392mm; height: 213mm; margin-top: 5mm; }
+  .diagrama svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 3; pointer-events: none; }
 
-  /* ---- Mapa ---- */
-  .mapa { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 6mm; align-items: stretch; }
-  .zona { border: 1.5px solid var(--azul-borde); border-radius: 4mm; padding: 5mm; background: #f7faff; display: flex; flex-direction: column; gap: 3mm; }
-  .zona.afuera { border: 1.5px dashed #c9ced6; background: #fafbfc; }
-  .zona.vercel { border-color: #d6d9de; background: #fbfbfc; }
-  .zona h3 { margin: 0; font-size: 12pt; }
-  .zona .caja { background: #fff; border: 1px solid var(--borde); border-radius: 2.5mm; padding: 3mm 4mm; font-size: 9pt; }
-  .zona .caja > b:first-child { display: block; font-size: 9.5pt; margin-bottom: .5mm; }
-  .flecha { text-align: center; color: var(--gris); font-size: 8.5pt; font-weight: 600; }
-  .tablas-lista { margin: 1mm 0 0; padding: 0; list-style: none; display: grid; gap: 1.4mm; }
-  .tablas-lista li { display: flex; gap: 2mm; align-items: baseline; }
-  .tablas-lista code { font-weight: 700; color: var(--azul); min-width: 24mm; font-size: 8.5pt; }
+  .tabla { position: absolute; width: 104mm; z-index: 1; border: 1.4px solid var(--azul); border-radius: 2mm; background: #fff; overflow: hidden; }
+  .tabla .cab { background: var(--azul); color: #fff; padding: 1.8mm 3mm; display: flex; justify-content: space-between; align-items: baseline; }
+  .tabla .cab b { font-size: 10.5pt; letter-spacing: .04em; font-family: "DejaVu Sans Mono", monospace; }
+  .tabla .cab span { font-size: 7pt; opacity: .92; }
+  .col-head, .fila { display: grid; grid-template-columns: 9.5mm 35.5mm 16.5mm 8.5mm 1fr; align-items: center; column-gap: 1.2mm; padding: 0 2.4mm; }
+  .col-head { font-size: 5.6pt; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); background: #f6f8fa; min-height: 5mm; border-bottom: 1px solid #e3e7ec; font-weight: 700; }
+  .fila { min-height: 6.9mm; border-bottom: 1px solid #edf0f3; font-size: 7.6pt; }
+  .fila:last-of-type { border-bottom: 0; }
+  .k { display: flex; gap: .7mm; }
+  .k i { font-style: normal; font-size: 5.6pt; font-weight: 800; padding: .25mm .9mm; border-radius: .8mm; letter-spacing: .02em; }
+  .pk { background: #fff3cf; color: #8a5a00; border: 1px solid #f0d78a; }
+  .fk { background: #e3edfc; color: var(--azul); border: 1px solid #b9cff2; }
+  .uk { background: #f1ebfd; color: var(--violeta); border: 1px solid #d8c9f6; }
+  .n { font-family: "DejaVu Sans Mono", monospace; font-size: 7.4pt; white-space: nowrap; }
+  .fila.es-pk .n { font-weight: 700; text-decoration: underline; text-underline-offset: 1.6px; }
+  .fila.es-fk .n { color: var(--azul); font-weight: 700; }
+  .t { font-family: "DejaVu Sans Mono", monospace; font-size: 6.9pt; color: #3d4652; white-space: nowrap; }
+  .nn { font-size: 5.8pt; font-weight: 700; text-align: center; border-radius: .8mm; padding: .2mm 0; }
+  .nn.si { color: var(--verde); background: #e6f4ec; }
+  .nn.no { color: var(--suave); background: #f1f3f5; }
+  .x { font-size: 6.6pt; color: var(--gris); line-height: 1.28; padding: .9mm 0; }
+  .x code { font-family: "DejaVu Sans Mono", monospace; font-size: 6pt; }
+  .x .ck { color: var(--ambar); font-weight: 700; }
+  .x .df { color: var(--verde); font-weight: 700; }
+  .x .ref { color: var(--azul); font-weight: 700; }
+  .regla-tabla { background: #fbf6ec; border-top: 1px solid #f0e2c4; font-size: 6.3pt; color: var(--ambar); padding: 1.3mm 2.6mm; line-height: 1.35; }
+  .regla-tabla code { font-family: "DejaVu Sans Mono", monospace; font-size: 6pt; color: #6d4a0c; }
 
-  /* ---- Diagrama ---- */
-  .diagrama { position: relative; width: 265mm; height: 150mm; margin-top: 1mm; }
-  .diagrama svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .entidad { position: absolute; border: 1.2px solid var(--azul); border-radius: 2.5mm; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(20,40,80,.08); }
-  .entidad .cab { background: var(--azul); color: #fff; padding: 1.6mm 3mm 1.4mm; }
-  .entidad .cab b { font-size: 9.5pt; letter-spacing: .03em; display: block; }
-  .entidad .cab span { font-size: 6.8pt; opacity: .9; }
-  .fila { display: grid; grid-template-columns: 6.5mm 1fr auto; gap: 1mm; align-items: center; height: 5.05mm; padding: 0 2.6mm; border-top: 1px solid #edf0f3; font-size: 7.2pt; }
-  .fila .ic { font-size: 7pt; text-align: center; }
-  .fila .n { font-family: "DejaVu Sans Mono", monospace; font-size: 7pt; white-space: nowrap; }
-  .fila .t { color: var(--suave); font-size: 6.4pt; white-space: nowrap; }
-  .fila.pk .n { font-weight: 700; }
-  .fila.fk .n { color: var(--azul); font-weight: 700; }
-  .nota-diag { position: absolute; font-size: 7.8pt; color: #3a4350; background: #fafbfc; border: 1px solid var(--borde); border-radius: 2.5mm; padding: 2.5mm 3.2mm; }
-  .nota-diag b { color: var(--texto); }
+  .notas { position: absolute; z-index: 1; border: 1px solid var(--borde); border-radius: 2mm; background: #fafbfc; padding: 3mm 3.6mm; font-size: 7.3pt; line-height: 1.45; color: #2f3845; }
+  .notas h3 { margin: 0 0 1.5mm; font-size: 8.4pt; letter-spacing: .03em; text-transform: uppercase; color: var(--texto); }
+  .notas ol { margin: 0; padding-left: 4.2mm; }
+  .notas li { margin-bottom: 1.2mm; }
+  .notas code { font-family: "DejaVu Sans Mono", monospace; font-size: 6.6pt; color: var(--azul); }
 
-  /* ---- Diccionario ---- */
-  table.dic { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
-  table.dic th { text-align: left; font-size: 6.6pt; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); font-weight: 700; padding: 1.4mm 1.6mm; border-bottom: 1.5px solid var(--borde); }
-  table.dic td { padding: 1.25mm 1.6mm; border-bottom: 1px solid #eef0f3; vertical-align: top; }
-  table.dic td.campo { font-family: "DejaVu Sans Mono", monospace; font-size: 7.1pt; white-space: nowrap; font-weight: 600; }
-  table.dic td.tipo { color: var(--gris); white-space: nowrap; }
-  .tit-tabla { display: flex; align-items: baseline; gap: 3mm; margin: 0 0 1.5mm; }
-  .tit-tabla b { font-size: 11pt; color: var(--azul); letter-spacing: .02em; }
-  .tit-tabla span { font-size: 8.3pt; color: var(--gris); }
-  .obl { font-size: 6.3pt; font-weight: 700; padding: 0 3px; border-radius: 3px; white-space: nowrap; }
-  .obl.si { color: var(--verde); background: var(--verde-claro); }
-  .obl.no { color: var(--gris); background: var(--gris-claro); }
-
-  /* ---- Relaciones ---- */
-  table.rel { width: 100%; border-collapse: collapse; font-size: 8.4pt; }
-  table.rel th { text-align: left; font-size: 6.8pt; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); padding: 1.8mm 2mm; border-bottom: 1.5px solid var(--borde); }
-  table.rel td { padding: 2.2mm 2mm; border-bottom: 1px solid #eef0f3; vertical-align: top; }
-  .card { font-weight: 700; color: var(--azul); white-space: nowrap; }
-
-  /* ---- Normalización ---- */
-  .punto { display: grid; grid-template-columns: 8mm 1fr; gap: 3mm; margin-bottom: 3.2mm; }
-  .punto .nro { width: 7mm; height: 7mm; border-radius: 50%; background: var(--azul-claro); color: var(--azul); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 9pt; }
-  .punto > div > b:first-child { display: block; font-size: 9.6pt; margin-bottom: .4mm; }
-  .punto p { margin: 0; font-size: 8.6pt; color: #3a4350; }
-  table.reglas { width: 100%; border-collapse: collapse; font-size: 7.9pt; }
-  table.reglas td { padding: 1.5mm 2mm; border-bottom: 1px solid #eef0f3; vertical-align: top; }
-  table.reglas td:first-child { font-family: "DejaVu Sans Mono", monospace; font-size: 7.3pt; white-space: nowrap; color: var(--azul); font-weight: 600; }
-
-  /* ---- Ejemplo ---- */
-  table.ej { border-collapse: collapse; font-size: 7.8pt; width: 100%; }
-  table.ej th { text-align: left; font-size: 6.6pt; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); padding: 1.3mm 1.8mm; border-bottom: 1.5px solid var(--borde); white-space: nowrap; }
-  table.ej td { padding: 1.4mm 1.8mm; border-bottom: 1px solid #eef0f3; vertical-align: top; }
-  .c1 { background: #e3eefc; border-radius: 2px; padding: 0 3px; font-family: "DejaVu Sans Mono", monospace; font-size: 7.2pt; }
-  .c2 { background: #e5f4ea; border-radius: 2px; padding: 0 3px; font-family: "DejaVu Sans Mono", monospace; font-size: 7.2pt; }
-  .vacio { color: #a0a7b1; font-style: italic; }
-  .ej-tit { font-size: 9pt; font-weight: 700; color: var(--azul); margin: 0 0 1.5mm; letter-spacing: .03em; }
-
-  .lista-cambios { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.8mm; font-size: 8.6pt; }
-  .lista-cambios li { display: grid; grid-template-columns: 17mm 1fr; gap: 2mm; }
-  .tag { font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-radius: 3px; padding: .5mm 1.5mm; text-align: center; height: fit-content; }
-  .tag.mas { color: var(--verde); background: var(--verde-claro); }
-  .tag.menos { color: var(--rojo); background: #fbeceb; }
-  .tag.cambio { color: var(--ambar); background: var(--ambar-claro); }
-  .frase { background: var(--azul-claro); border-radius: 3mm; padding: 4mm 5mm; }
-  .frase h3 { margin: 0 0 1.5mm; font-size: 10.5pt; color: var(--azul); }
-  .frase p { margin: 0; font-size: 9.5pt; }
+  .pie { position: absolute; left: 14mm; right: 14mm; bottom: 7mm; border-top: 1px solid var(--borde); padding-top: 2.6mm; display: flex; gap: 6mm; align-items: center; flex-wrap: wrap; font-size: 7.4pt; color: var(--gris); }
+  .pie .item { display: inline-flex; align-items: center; gap: 1.6mm; }
+  .pie svg { width: 15mm; height: 5mm; }
+  .pie .k i { font-size: 5.8pt; }
+  .pie b { color: var(--texto); }
 </style>
 </head>
 <body>
-
-<!-- ============ 1. PORTADA ============ -->
-<section class="pagina">
-  <div class="portada">
+<div class="hoja">
+  <div class="cabezal">
     <div>
-      <div class="marca">Returnly</div>
-      <h1>¿Cómo se guardan<br>los datos?</h1>
-      <p class="bajada" style="font-size:12pt">El MER (Modelo Entidad-Relación) de Returnly, completo y explicado en simple. Refleja la base de datos tal como está hoy en Supabase.</p>
-      <div class="que-es">
-        <h3>¿Qué es un MER?</h3>
-        <p style="margin:0;font-size:9.5pt;color:#3a4350">Es un dibujo de <b>qué cosas guarda un sistema</b> y <b>cómo se conectan entre sí</b>. Cada caja es una tabla (como una hoja de Excel: columnas arriba, una fila por cada cosa guardada) y cada línea muestra que una tabla "apunta" a otra. Por ejemplo: cada usuario dice de qué empresa es.</p>
-      </div>
-      <p class="muted" style="font-size:8.5pt;margin-top:6mm">Base de datos: PostgreSQL en Supabase · 5 tablas · 46 campos · 6 relaciones</p>
+      <h1>Modelo Entidad-Relación · <span>Returnly</span></h1>
+      <p>Modelo lógico de la base de datos en notación pata de gallo (Crow's Foot), con tipos, nulabilidad, claves, valores por defecto y restricciones.</p>
     </div>
-    <div class="leyenda">
-      <h3>Cómo leer los diagramas</h3>
-      <div class="ley"><div class="simbolo">🔑</div><div><b>Clave (clave primaria)</b><span>El código único de cada fila. Nunca se repite, como el número de cédula.</span></div></div>
-      <div class="ley"><div class="simbolo">🔗</div><div><b>Enlace (clave foránea)</b><span>Un campo que guarda la clave de otra tabla. Es lo que las conecta.</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="card-num">1</span></div><div><b>Lado "uno"</b><span>De este lado hay una sola fila.</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="card-num">N</span></div><div><b>Lado "muchos"</b><span>De este lado puede haber muchas filas. Ej.: 1 empresa tiene N (muchos) usuarios.</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="linea-ej"></span></div><div><b>Línea llena</b><span>Enlace obligatorio: el campo siempre apunta a una fila de la otra tabla.</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="linea-ej punteada"></span></div><div><b>Línea punteada</b><span>Enlace opcional: el campo puede quedar vacío (y se explica cuándo).</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="u-badge">ÚNICO</span></div><div><b>Valor único</b><span>No puede haber dos filas con el mismo valor en ese campo.</span></div></div>
-      <div class="ley"><div class="simbolo"><span class="regla-badge">REGLA</span></div><div><b>Regla de la base</b><span>Una condición que la base controla sola: si no se cumple, no deja guardar.</span></div></div>
-      <div class="ley" style="margin-bottom:0"><div class="simbolo">📸</div><div><b>Foto histórica</b><span>Copia a propósito de un dato, para que el registro no cambie si después se modifica el original.</span></div></div>
+    <div class="meta">
+      <b>Motor:</b> PostgreSQL 17 (Supabase) · esquema <code>public</code><br>
+      <b>5</b> tablas · <b>46</b> columnas · <b>5</b> claves foráneas + 1 relación lógica<br>
+      Generado desde la base en producción · noviembre 2026
     </div>
   </div>
-  <div class="pie">MER · Returnly</div>
-</section>
 
-<!-- ============ 2. MAPA GENERAL ============ -->
-<section class="pagina">
-  <span class="chip">El mapa general</span>
-  <h2>Qué se guarda en la base de Returnly, y qué no</h2>
-  <p class="bajada">Returnly tiene <b>una sola base de datos</b> (Supabase) con 5 tablas. Los datos del comportamiento de los clientes de cada tienda (visitas, carritos, compras) <b>no se guardan en ella</b>: viven en el BigQuery de cada empresa y Returnly los lee cuando hace falta.</p>
-  <div class="mapa">
-    <div class="zona vercel">
-      <span class="chip">Lo que usa la gente</span>
-      <h3>Returnly en Vercel</h3>
-      <div class="caja"><b>Las pantallas (portal)</b>Login, panel de cada empresa, Feedback y Admin de seguridad.</div>
-      <div class="flecha">↓ todo pasa por ↓</div>
-      <div class="caja"><b>El servidor (backend)</b>Valida quién es cada uno, aplica las reglas y es <b>lo único que entra a la base</b>, con una clave secreta.</div>
-      <p class="muted" style="font-size:8pt;margin:0">El navegador nunca habla directo con la base ni con Google.</p>
-    </div>
-    <div class="zona">
-      <span class="chip azul">La base · este MER</span>
-      <h3>Supabase (PostgreSQL)</h3>
-      <div class="caja">
-        <b>5 tablas</b>
-        <ul class="tablas-lista">
-          <li><code>empresa</code><span>las tiendas clientes y dónde están sus datos</span></li>
-          <li><code>usuario</code><span>las personas que pueden entrar (admin o cliente)</span></li>
-          <li><code>acceso</code><span>cada intento de entrar, bueno o malo</span></li>
-          <li><code>auditoria</code><span>cada cambio hecho sobre empresas y usuarios</span></li>
-          <li><code>seguimiento</code><span>avance y 👍/👎 de cada recomendación</span></li>
-        </ul>
-      </div>
-      <div class="caja"><b>Protegida</b>Ninguna tabla se puede leer desde internet: solo el servidor de Returnly entra.</div>
-    </div>
-    <div class="zona afuera">
-      <span class="chip">Afuera (de cada empresa)</span>
-      <h3>Google BigQuery</h3>
-      <div class="caja"><b>Google Merchandise Store</b>Datos de GA4 (nov. 2020 a ene. 2021).</div>
-      <div class="caja"><b>TheLook</b>Tienda de ropa simulada (últimos 90 días).</div>
-      <p style="font-size:8.5pt;margin:0;color:#3a4350">Returnly los lee con la <b>KEY de Google</b> de cada empresa (guardada encriptada en <code>empresa</code>), calcula los resultados y <b>no los copia</b>. Por eso no aparecen en el MER: no son tablas nuestras.</p>
-    </div>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 3. DIAGRAMA COMPLETO ============ -->
-<section class="pagina">
-  <span class="chip azul">Returnly · Supabase</span>
-  <h2>El diagrama completo: 5 tablas y cómo se conectan</h2>
-  <p class="bajada" style="margin-bottom:3mm">Cada caja muestra todos los campos de la tabla con su tipo. Las líneas van del enlace 🔗 a la clave 🔑 de la tabla a la que apunta.</p>
   <div class="diagrama" id="diagrama">
     <svg id="lineas"></svg>
 
-    <div class="entidad" id="e-empresa" style="left:6mm; top:0; width:66mm">
-      <div class="cab"><b>EMPRESA</b><span>Las tiendas clientes de Returnly</span></div>
-      <div class="fila pk" data-campo="empresa.id"><span class="ic">🔑</span><span class="n">id</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">nombre</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">fuente_tipo</span><span class="t">texto · ga4 / thelook</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">fuente_config</span><span class="t">JSON</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">credencial_cifrada</span><span class="t">texto · encriptado</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">credencial_email</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">web</span><span class="t">texto · URL</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">nota</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">activa</span><span class="t">sí / no</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">creada_en</span><span class="t">fecha y hora</span></div>
+    <!-- EMPRESA -->
+    <div class="tabla" id="t-empresa" style="left:26mm; top:0">
+      <div class="cab"><b>empresa</b><span>Tiendas clientes de Returnly</span></div>
+      <div class="col-head"><span>Clave</span><span>Columna</span><span>Tipo</span><span>Nulo</span><span>Default · restricción</span></div>
+      <div class="fila es-pk" data-c="empresa.id"><span class="k"><i class="pk">PK</i></span><span class="n">id</span><span class="t">text</span><span class="nn si">NN</span><span class="x">ej. <code>google-merch</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">nombre</span><span class="t">text</span><span class="nn si">NN</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">fuente_tipo</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ck">CHECK</span> in (<code>ga4</code>, <code>thelook</code>)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">fuente_config</span><span class="t">jsonb</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>'{}'</code> · ubicación en BigQuery</span></div>
+      <div class="fila"><span class="k"></span><span class="n">credencial_cifrada</span><span class="t">text</span><span class="nn no">NULL</span><span class="x">KEY de Google cifrada (AES-256-GCM)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">credencial_email</span><span class="t">text</span><span class="nn no">NULL</span><span class="x">cuenta de servicio de la KEY</span></div>
+      <div class="fila"><span class="k"></span><span class="n">web</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"><span class="ck">CHECK</span> <code>~ '^https?://[^\s]+$'</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">nota</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">activa</span><span class="t">boolean</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>true</code> · baja lógica</span></div>
+      <div class="fila"><span class="k"></span><span class="n">creada_en</span><span class="t">timestamptz</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>now()</code></span></div>
     </div>
 
-    <div class="entidad" id="e-usuario" style="left:101mm; top:0; width:66mm">
-      <div class="cab"><b>USUARIO</b><span>Las personas que pueden entrar</span></div>
-      <div class="fila pk" data-campo="usuario.id"><span class="ic">🔑</span><span class="n">id</span><span class="t">código (uuid)</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">usuario</span><span class="t">texto · único</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">nombre</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">password_hash</span><span class="t">texto · protegido</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">rol</span><span class="t">admin / cliente</span></div>
-      <div class="fila fk" data-campo="usuario.empresa_id"><span class="ic">🔗</span><span class="n">empresa_id</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">activo</span><span class="t">sí / no</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">creado_en</span><span class="t">fecha y hora</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">ultimo_acceso</span><span class="t">fecha y hora</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">intentos_fallidos</span><span class="t">número</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">bloqueado_por_intentos</span><span class="t">sí / no</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">bloqueado_hasta</span><span class="t">fecha y hora</span></div>
+    <!-- USUARIO -->
+    <div class="tabla" id="t-usuario" style="left:155mm; top:0">
+      <div class="cab"><b>usuario</b><span>Personas que pueden ingresar</span></div>
+      <div class="col-head"><span>Clave</span><span>Columna</span><span>Tipo</span><span>Nulo</span><span>Default · restricción</span></div>
+      <div class="fila es-pk" data-c="usuario.id"><span class="k"><i class="pk">PK</i></span><span class="n">id</span><span class="t">uuid</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>gen_random_uuid()</code></span></div>
+      <div class="fila"><span class="k"><i class="uk">UK</i></span><span class="n">usuario</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ck">CHECK</span> <code>usuario = lower(usuario)</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">nombre</span><span class="t">text</span><span class="nn si">NN</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">password_hash</span><span class="t">text</span><span class="nn si">NN</span><span class="x">hash scrypt (nunca la contraseña)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">rol</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ck">CHECK</span> in (<code>admin</code>, <code>cliente</code>)</span></div>
+      <div class="fila es-fk" data-c="usuario.empresa_id"><span class="k"><i class="fk">FK</i></span><span class="n">empresa_id</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"><span class="ref">→ empresa.id</span> · índice</span></div>
+      <div class="fila"><span class="k"></span><span class="n">activo</span><span class="t">boolean</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>true</code> · bloqueo lógico</span></div>
+      <div class="fila"><span class="k"></span><span class="n">creado_en</span><span class="t">timestamptz</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>now()</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">ultimo_acceso</span><span class="t">timestamptz</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">intentos_fallidos</span><span class="t">smallint</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>0</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">bloqueado_por_intentos</span><span class="t">boolean</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>false</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">bloqueado_hasta</span><span class="t">timestamptz</span><span class="nn no">NULL</span><span class="x">bloqueo temporal (admins)</span></div>
+      <div class="regla-tabla"><b>CHECK</b> <code>(rol = 'admin' AND empresa_id IS NULL) OR (rol = 'cliente' AND empresa_id IS NOT NULL)</code></div>
     </div>
 
-    <div class="entidad" id="e-acceso" style="left:196mm; top:0; width:66mm">
-      <div class="cab"><b>ACCESO</b><span>Cada intento de entrar</span></div>
-      <div class="fila pk"><span class="ic">🔑</span><span class="n">id</span><span class="t">número automático</span></div>
-      <div class="fila fk" data-campo="acceso.usuario_id"><span class="ic">🔗</span><span class="n">usuario_id</span><span class="t">código (uuid)</span></div>
-      <div class="fila"><span class="ic">📸</span><span class="n">usuario_ingresado</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">exito</span><span class="t">sí / no</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">motivo</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">ip</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">user_agent</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">fecha</span><span class="t">fecha y hora</span></div>
+    <!-- ACCESO -->
+    <div class="tabla" id="t-acceso" style="left:284mm; top:0">
+      <div class="cab"><b>acceso</b><span>Cada intento de ingreso</span></div>
+      <div class="col-head"><span>Clave</span><span>Columna</span><span>Tipo</span><span>Nulo</span><span>Default · restricción</span></div>
+      <div class="fila es-pk"><span class="k"><i class="pk">PK</i></span><span class="n">id</span><span class="t">bigint</span><span class="nn si">NN</span><span class="x"><span class="df">IDENTITY</span> (always)</span></div>
+      <div class="fila es-fk" data-c="acceso.usuario_id"><span class="k"><i class="fk">FK</i></span><span class="n">usuario_id</span><span class="t">uuid</span><span class="nn no">NULL</span><span class="x"><span class="ref">→ usuario.id</span> · índice · NULL si no existe</span></div>
+      <div class="fila"><span class="k"></span><span class="n">usuario_ingresado</span><span class="t">text</span><span class="nn si">NN</span><span class="x">texto tal cual se escribió</span></div>
+      <div class="fila"><span class="k"></span><span class="n">exito</span><span class="t">boolean</span><span class="nn si">NN</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">motivo</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">ip</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">user_agent</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">fecha</span><span class="t">timestamptz</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>now()</code> · índice</span></div>
     </div>
 
-    <div class="entidad" id="e-auditoria" style="left:196mm; top:66mm; width:66mm">
-      <div class="cab"><b>AUDITORIA</b><span>Cada cambio sobre empresas y usuarios</span></div>
-      <div class="fila pk"><span class="ic">🔑</span><span class="n">id</span><span class="t">número automático</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">fecha</span><span class="t">fecha y hora</span></div>
-      <div class="fila fk" data-campo="auditoria.actor_id"><span class="ic">🔗</span><span class="n">actor_id</span><span class="t">código (uuid)</span></div>
-      <div class="fila"><span class="ic">📸</span><span class="n">actor_usuario</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">accion</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">objetivo_tipo</span><span class="t">usuario / empresa</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">objetivo_id</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic">📸</span><span class="n">objetivo_nombre</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">detalle</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">ip</span><span class="t">texto</span></div>
+    <!-- AUDITORIA -->
+    <div class="tabla" id="t-auditoria" style="left:284mm; top:84mm">
+      <div class="cab"><b>auditoria</b><span>Cambios sobre empresas y usuarios</span></div>
+      <div class="col-head"><span>Clave</span><span>Columna</span><span>Tipo</span><span>Nulo</span><span>Default · restricción</span></div>
+      <div class="fila es-pk"><span class="k"><i class="pk">PK</i></span><span class="n">id</span><span class="t">bigint</span><span class="nn si">NN</span><span class="x"><span class="df">IDENTITY</span> (always)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">fecha</span><span class="t">timestamptz</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>now()</code> · índice</span></div>
+      <div class="fila es-fk" data-c="auditoria.actor_id"><span class="k"><i class="fk">FK</i></span><span class="n">actor_id</span><span class="t">uuid</span><span class="nn no">NULL</span><span class="x"><span class="ref">→ usuario.id</span> · NULL = sistema</span></div>
+      <div class="fila"><span class="k"></span><span class="n">actor_usuario</span><span class="t">text</span><span class="nn no">NULL</span><span class="x">copia histórica</span></div>
+      <div class="fila"><span class="k"></span><span class="n">accion</span><span class="t">text</span><span class="nn si">NN</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">objetivo_tipo</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ck">CHECK</span> in (<code>usuario</code>, <code>empresa</code>)</span></div>
+      <div class="fila" data-c="auditoria.objetivo_id"><span class="k"></span><span class="n">objetivo_id</span><span class="t">text</span><span class="nn no">NULL</span><span class="x">relación lógica (ver nota 2)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">objetivo_nombre</span><span class="t">text</span><span class="nn no">NULL</span><span class="x">copia histórica</span></div>
+      <div class="fila"><span class="k"></span><span class="n">detalle</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
+      <div class="fila"><span class="k"></span><span class="n">ip</span><span class="t">text</span><span class="nn no">NULL</span><span class="x"></span></div>
     </div>
 
-    <div class="entidad" id="e-seguimiento" style="left:6mm; top:86mm; width:66mm">
-      <div class="cab"><b>SEGUIMIENTO</b><span>Avance y voto de cada recomendación</span></div>
-      <div class="fila pk fk" data-campo="seguimiento.empresa_id"><span class="ic">🔑🔗</span><span class="n">empresa_id</span><span class="t">texto</span></div>
-      <div class="fila pk"><span class="ic">🔑</span><span class="n">recomendacion_id</span><span class="t">texto</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">estado</span><span class="t">pendiente / en curso / hecha</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">voto</span><span class="t">👍 1 / 👎 -1</span></div>
-      <div class="fila"><span class="ic"></span><span class="n">actualizado_en</span><span class="t">fecha y hora</span></div>
-      <div class="fila fk" data-campo="seguimiento.actualizado_por"><span class="ic">🔗</span><span class="n">actualizado_por</span><span class="t">código (uuid)</span></div>
+    <!-- SEGUIMIENTO -->
+    <div class="tabla" id="t-seguimiento" style="left:26mm; top:124mm">
+      <div class="cab"><b>seguimiento</b><span>Avance y voto por recomendación</span></div>
+      <div class="col-head"><span>Clave</span><span>Columna</span><span>Tipo</span><span>Nulo</span><span>Default · restricción</span></div>
+      <div class="fila es-pk es-fk" data-c="seguimiento.empresa_id"><span class="k"><i class="pk">PK</i><i class="fk">FK</i></span><span class="n">empresa_id</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ref">→ empresa.id</span></span></div>
+      <div class="fila es-pk"><span class="k"><i class="pk">PK</i></span><span class="n">recomendacion_id</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="ck">CHECK</span> <code>~ '^[a-z0-9_-]{1,40}$'</code></span></div>
+      <div class="fila"><span class="k"></span><span class="n">estado</span><span class="t">text</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>'pendiente'</code> · <span class="ck">CHECK</span> in (<code>pendiente</code>, <code>en_curso</code>, <code>hecha</code>)</span></div>
+      <div class="fila"><span class="k"></span><span class="n">voto</span><span class="t">smallint</span><span class="nn no">NULL</span><span class="x"><span class="ck">CHECK</span> in (<code>1</code>, <code>-1</code>) · NULL = sin voto</span></div>
+      <div class="fila"><span class="k"></span><span class="n">actualizado_en</span><span class="t">timestamptz</span><span class="nn si">NN</span><span class="x"><span class="df">DEFAULT</span> <code>now()</code></span></div>
+      <div class="fila es-fk" data-c="seguimiento.actualizado_por"><span class="k"><i class="fk">FK</i></span><span class="n">actualizado_por</span><span class="t">uuid</span><span class="nn no">NULL</span><span class="x"><span class="ref">→ usuario.id</span></span></div>
+      <div class="regla-tabla"><b>PK compuesta</b> <code>(empresa_id, recomendacion_id)</code>: una sola fila por empresa y recomendación.</div>
     </div>
 
-    <div class="nota-diag" style="left:101mm; top:86mm; width:66mm">
-      <b>Clave doble en SEGUIMIENTO.</b> Se identifica por empresa + recomendación juntas: cada empresa tiene <b>una sola fila por recomendación</b>, así no puede votar dos veces la misma.
-    </div>
-    <div class="nota-diag" style="left:101mm; top:116mm; width:66mm">
-      <b>¿Sobre qué fue el cambio?</b> En AUDITORIA, <code>objetivo_tipo</code> + <code>objetivo_id</code> dicen si fue sobre un usuario o una empresa. No tiene línea fija porque puede apuntar a <b>cualquiera de las dos tablas</b>.
+    <!-- NOTAS -->
+    <div class="notas" style="left:155mm; top:119mm; width:104mm">
+      <h3>Notas del modelo</h3>
+      <ol>
+        <li><b>Integridad referencial:</b> las 5 claves foráneas son <code>ON DELETE NO ACTION</code>. No se borran filas: empresas y usuarios se dan de baja con <code>activa</code> / <code>activo</code> = <code>false</code>, así el historial nunca queda huérfano.</li>
+        <li><b>Relación lógica:</b> <code>auditoria.objetivo_id</code> apunta a <code>usuario.id</code> o a <code>empresa.id</code> según <code>objetivo_tipo</code>. No tiene FK porque puede referir a dos tablas; <code>objetivo_nombre</code> guarda el nombre en ese momento.</li>
+        <li><b>Copias históricas a propósito</b> (no rompen la normalización): <code>acceso.usuario_ingresado</code>, <code>auditoria.actor_usuario</code>, <code>auditoria.objetivo_nombre</code> y <code>empresa.credencial_email</code> (se muestra sin descifrar la KEY).</li>
+        <li><b>Índices:</b> PK de cada tabla, <code>usuario(usuario)</code> único, <code>usuario(empresa_id)</code>, <code>acceso(fecha)</code>, <code>acceso(usuario_id)</code> y <code>auditoria(fecha)</code>.</li>
+        <li><b>Seguridad:</b> RLS activado en las 5 tablas, sin políticas y con permisos revocados a <code>anon</code> y <code>authenticated</code>: solo el backend (clave secreta) lee y escribe.</li>
+        <li><b>Fuera del modelo:</b> los datos de comportamiento de cada tienda viven en su Google BigQuery y no se copian. Las recomendaciones se calculan; solo se guarda su seguimiento.</li>
+      </ol>
     </div>
   </div>
-  <div class="pie">MER · Returnly</div>
-</section>
 
-<!-- ============ 4. DICCIONARIO: EMPRESA y USUARIO ============ -->
-<section class="pagina">
-  <span class="chip azul">Diccionario de datos · 1 de 3</span>
-  <h2>Campo por campo: EMPRESA y USUARIO</h2>
-  <p class="bajada" style="margin-bottom:3.5mm">Para cada campo: qué tipo de dato es, si es obligatorio, qué reglas controla la base y qué guarda.</p>
-  <div class="grilla2" style="gap:7mm">
-    <div>
-      <div class="tit-tabla"><b>EMPRESA</b><span>Una fila por tienda cliente</span></div>
-      <table class="dic">
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Qué guarda · reglas</th></tr></thead>
-        <tbody>
-          <tr><td class="campo">🔑 id</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Código único de la tienda, ej. <code>google-merch</code>. Lo usan las otras tablas para apuntarle.</td></tr>
-          <tr><td class="campo">nombre</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Nombre de la tienda, ej. "TheLook (tienda de ropa)".</td></tr>
-          <tr><td class="campo">fuente_tipo</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Qué tipo de datos tiene. <span class="regla-badge">REGLA</span> solo <code>ga4</code> o <code>thelook</code>.</td></tr>
-          <tr><td class="campo">fuente_config</td><td class="tipo">JSON</td><td><span class="obl si">SÍ</span></td><td>Dónde están sus datos en BigQuery (ej. el dataset). Es JSON porque cambia según el tipo de fuente. Vacío por defecto.</td></tr>
-          <tr><td class="campo">credencial_cifrada</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>La KEY de Google de la empresa, <b>encriptada</b> (AES-256-GCM). Vacía hasta que el admin la carga.</td></tr>
-          <tr><td class="campo">credencial_email</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>La cuenta de Google de esa KEY. Se guarda aparte para mostrarla sin desencriptar la KEY. 📸</td></tr>
-          <tr><td class="campo">web</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Su tienda online. <span class="regla-badge">REGLA</span> tiene que empezar con <code>http://</code> o <code>https://</code>.</td></tr>
-          <tr><td class="campo">nota</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Aviso sobre sus datos que se muestra en su panel (ej. "los datos tienen huecos").</td></tr>
-          <tr><td class="campo">activa</td><td class="tipo">sí / no</td><td><span class="obl si">SÍ</span></td><td>Si sigue siendo cliente. Dar de baja la pone en "no": <b>nunca se borra</b>. Por defecto, sí.</td></tr>
-          <tr><td class="campo">creada_en</td><td class="tipo">fecha y hora</td><td><span class="obl si">SÍ</span></td><td>Cuándo se dio de alta. Se completa sola.</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div>
-      <div class="tit-tabla"><b>USUARIO</b><span>Una fila por persona que puede entrar</span></div>
-      <table class="dic">
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Qué guarda · reglas</th></tr></thead>
-        <tbody>
-          <tr><td class="campo">🔑 id</td><td class="tipo">código uuid</td><td><span class="obl si">SÍ</span></td><td>Código único al azar. Se genera solo.</td></tr>
-          <tr><td class="campo">usuario</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Nombre para entrar. <span class="u-badge">ÚNICO</span> <span class="regla-badge">REGLA</span> todo en minúsculas (así "Alan" y "alan" no pueden ser dos usuarios).</td></tr>
-          <tr><td class="campo">nombre</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Nombre de la persona.</td></tr>
-          <tr><td class="campo">password_hash</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>La contraseña <b>protegida</b> (hash scrypt). La contraseña real nunca se guarda.</td></tr>
-          <tr><td class="campo">rol</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td><span class="regla-badge">REGLA</span> <code>admin</code> (equipo de Returnly) o <code>cliente</code> (de una empresa).</td></tr>
-          <tr><td class="campo">🔗 empresa_id</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>A qué empresa pertenece → <code>empresa.id</code>. <span class="regla-badge">REGLA</span> un cliente tiene que tener empresa y un admin no.</td></tr>
-          <tr><td class="campo">activo</td><td class="tipo">sí / no</td><td><span class="obl si">SÍ</span></td><td>Si puede entrar. Bloquear lo pone en "no": nunca se borra.</td></tr>
-          <tr><td class="campo">creado_en</td><td class="tipo">fecha y hora</td><td><span class="obl si">SÍ</span></td><td>Cuándo se creó. Se completa sola.</td></tr>
-          <tr><td class="campo">ultimo_acceso</td><td class="tipo">fecha y hora</td><td><span class="obl no">NO</span></td><td>La última vez que entró bien.</td></tr>
-          <tr><td class="campo">intentos_fallidos</td><td class="tipo">número</td><td><span class="obl si">SÍ</span></td><td>Contraseñas incorrectas seguidas. Vuelve a 0 al entrar bien. Por defecto, 0.</td></tr>
-          <tr><td class="campo">bloqueado_por_intentos</td><td class="tipo">sí / no</td><td><span class="obl si">SÍ</span></td><td>Si el bloqueo fue automático, a los 5 intentos fallidos (y no a mano).</td></tr>
-          <tr><td class="campo">bloqueado_hasta</td><td class="tipo">fecha y hora</td><td><span class="obl no">NO</span></td><td>Hasta cuándo dura el bloqueo temporal de un admin (15 minutos).</td></tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="pie">
+    <span class="item"><span class="k"><i class="pk">PK</i></span> clave primaria</span>
+    <span class="item"><span class="k"><i class="fk">FK</i></span> clave foránea</span>
+    <span class="item"><span class="k"><i class="uk">UK</i></span> valor único</span>
+    <span class="item"><span class="nn si" style="padding:.2mm 1mm">NN</span> NOT NULL</span>
+    <span class="item" id="ley-11"><svg viewBox="0 0 60 20"></svg> exactamente uno (1..1)</span>
+    <span class="item" id="ley-01"><svg viewBox="0 0 60 20"></svg> cero o uno (0..1)</span>
+    <span class="item" id="ley-0n"><svg viewBox="0 0 60 20"></svg> cero o muchos (0..N)</span>
+    <span class="item"><svg viewBox="0 0 60 20"><line x1="2" y1="10" x2="58" y2="10" stroke="#1f5fbf" stroke-width="1.6" stroke-dasharray="5 4"/></svg> relación no identificatoria (FK opcional)</span>
+    <span class="item"><svg viewBox="0 0 60 20"><line x1="2" y1="10" x2="58" y2="10" stroke="#1f5fbf" stroke-width="1.8"/></svg> relación identificatoria / FK obligatoria</span>
   </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 5. DICCIONARIO: ACCESO y AUDITORIA ============ -->
-<section class="pagina">
-  <span class="chip azul">Diccionario de datos · 2 de 3</span>
-  <h2>Campo por campo: ACCESO y AUDITORIA</h2>
-  <p class="bajada" style="margin-bottom:3.5mm">Las dos tablas de registro: se agregan filas, nunca se modifican. Son el historial de seguridad de Returnly.</p>
-  <div class="grilla2" style="gap:7mm">
-    <div>
-      <div class="tit-tabla"><b>ACCESO</b><span>Una fila por cada intento de entrar</span></div>
-      <table class="dic">
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Qué guarda · reglas</th></tr></thead>
-        <tbody>
-          <tr><td class="campo">🔑 id</td><td class="tipo">número auto.</td><td><span class="obl si">SÍ</span></td><td>Número de registro. Se genera solo (1, 2, 3…).</td></tr>
-          <tr><td class="campo">🔗 usuario_id</td><td class="tipo">código uuid</td><td><span class="obl no">NO</span></td><td>Quién intentó entrar → <code>usuario.id</code>. Queda <b>vacío si escribió un usuario que no existe</b>.</td></tr>
-          <tr><td class="campo">usuario_ingresado</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Lo que la persona escribió, tal cual. 📸 Sirve para ver intentos con usuarios inventados.</td></tr>
-          <tr><td class="campo">exito</td><td class="tipo">sí / no</td><td><span class="obl si">SÍ</span></td><td>Si pudo entrar.</td></tr>
-          <tr><td class="campo">motivo</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Por qué sí o no: "ok", "contraseña incorrecta", "usuario inexistente", "usuario bloqueado (5 intentos fallidos)"…</td></tr>
-          <tr><td class="campo">ip</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Desde qué dirección de internet se intentó.</td></tr>
-          <tr><td class="campo">user_agent</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Con qué navegador y sistema.</td></tr>
-          <tr><td class="campo">fecha</td><td class="tipo">fecha y hora</td><td><span class="obl si">SÍ</span></td><td>Cuándo. Se completa sola. Tiene un índice para ordenar rápido.</td></tr>
-        </tbody>
-      </table>
-      <div class="tarjeta gris" style="margin-top:4mm;padding:3mm 4mm">
-        <p style="font-size:8.3pt"><b>Para qué sirve:</b> Admin → <i>Registro de accesos</i>. Muestra quién entró, cuándo, desde dónde y los intentos fallidos, con filtro por administradores, por empresa o por usuario inexistente.</p>
-      </div>
-    </div>
-    <div>
-      <div class="tit-tabla"><b>AUDITORIA</b><span>Una fila por cada cambio hecho</span></div>
-      <table class="dic">
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Qué guarda · reglas</th></tr></thead>
-        <tbody>
-          <tr><td class="campo">🔑 id</td><td class="tipo">número auto.</td><td><span class="obl si">SÍ</span></td><td>Número de registro. Se genera solo.</td></tr>
-          <tr><td class="campo">fecha</td><td class="tipo">fecha y hora</td><td><span class="obl si">SÍ</span></td><td>Cuándo se hizo el cambio. Se completa sola. Tiene índice.</td></tr>
-          <tr><td class="campo">🔗 actor_id</td><td class="tipo">código uuid</td><td><span class="obl no">NO</span></td><td>Quién lo hizo → <code>usuario.id</code>. Queda <b>vacío si lo hizo el sistema</b> (ej. un bloqueo automático).</td></tr>
-          <tr><td class="campo">actor_usuario</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>El nombre de usuario de quien lo hizo en ese momento, o "sistema". 📸</td></tr>
-          <tr><td class="campo">accion</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Qué hizo: "Creó el usuario", "Bloqueó al usuario", "Cargó la KEY de Google", "Bloqueo automático"…</td></tr>
-          <tr><td class="campo">objetivo_tipo</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Sobre qué fue. <span class="regla-badge">REGLA</span> <code>usuario</code> o <code>empresa</code>.</td></tr>
-          <tr><td class="campo">objetivo_id</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>El código del usuario o la empresa afectado (sin enlace fijo: puede ser de cualquiera de las dos tablas).</td></tr>
-          <tr><td class="campo">objetivo_nombre</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Su nombre en ese momento. 📸</td></tr>
-          <tr><td class="campo">detalle</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Más información, ej. "Cambió: nota, web" o "5 intentos fallidos seguidos".</td></tr>
-          <tr><td class="campo">ip</td><td class="tipo">texto</td><td><span class="obl no">NO</span></td><td>Desde dónde se hizo.</td></tr>
-        </tbody>
-      </table>
-      <div class="tarjeta gris" style="margin-top:4mm;padding:3mm 4mm">
-        <p style="font-size:8.3pt"><b>Para qué sirve:</b> Admin → <i>Auditoría</i>. Responde "¿quién bloqueó a este usuario?" o "¿quién cambió la KEY de esta empresa?". También registra cuando alguien cambia su propia contraseña.</p>
-      </div>
-    </div>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 6. DICCIONARIO: SEGUIMIENTO + RELACIONES ============ -->
-<section class="pagina">
-  <span class="chip azul">Diccionario de datos · 3 de 3 · Relaciones</span>
-  <h2>SEGUIMIENTO, y todas las relaciones entre tablas</h2>
-  <div style="display:grid;grid-template-columns:105mm 1fr;gap:7mm;margin-top:3mm">
-    <div>
-      <div class="tit-tabla"><b>SEGUIMIENTO</b><span>Una fila por empresa y recomendación</span></div>
-      <table class="dic">
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Qué guarda · reglas</th></tr></thead>
-        <tbody>
-          <tr><td class="campo">🔑🔗 empresa_id</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>De qué empresa → <code>empresa.id</code>. Es parte de la clave.</td></tr>
-          <tr><td class="campo">🔑 recomendacion_id</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td>Qué recomendación del Feedback (ej. <code>perdemos</code>, <code>destacar</code>). Parte de la clave. <span class="regla-badge">REGLA</span> minúsculas, números y guiones.</td></tr>
-          <tr><td class="campo">estado</td><td class="tipo">texto</td><td><span class="obl si">SÍ</span></td><td><span class="regla-badge">REGLA</span> <code>pendiente</code>, <code>en_curso</code> o <code>hecha</code>. Por defecto, pendiente.</td></tr>
-          <tr><td class="campo">voto</td><td class="tipo">número</td><td><span class="obl no">NO</span></td><td><span class="regla-badge">REGLA</span> <code>1</code> = 👍, <code>-1</code> = 👎. Vacío = no votó.</td></tr>
-          <tr><td class="campo">actualizado_en</td><td class="tipo">fecha y hora</td><td><span class="obl si">SÍ</span></td><td>Último cambio.</td></tr>
-          <tr><td class="campo">🔗 actualizado_por</td><td class="tipo">código uuid</td><td><span class="obl no">NO</span></td><td>Quién lo marcó → <code>usuario.id</code>.</td></tr>
-        </tbody>
-      </table>
-      <div class="tarjeta gris" style="margin-top:4mm;padding:3mm 4mm">
-        <p style="font-size:8.3pt"><b>Las recomendaciones en sí no son una tabla:</b> se calculan con los datos de BigQuery de cada empresa. Solo se guarda lo que la empresa <b>hace con ellas</b>: su estado y su voto.</p>
-      </div>
-    </div>
-    <div>
-      <div class="tit-tabla"><b>RELACIONES</b><span>Las 6 conexiones del modelo</span></div>
-      <table class="rel">
-        <thead><tr><th>Relación</th><th>Tipo</th><th>Enlace</th><th>¿Puede quedar vacío?</th></tr></thead>
-        <tbody>
-          <tr><td><b>EMPRESA</b> tiene <b>USUARIOS</b><br><span class="muted">Cada cliente ve solo los datos de su tienda.</span></td><td class="card">1 a N</td><td><code>usuario.empresa_id</code></td><td>Sí, solo para los <b>admin</b>, que son de Returnly. La base obliga a que todo cliente tenga empresa.</td></tr>
-          <tr><td><b>USUARIO</b> registra <b>ACCESOS</b><br><span class="muted">Su historial de ingresos.</span></td><td class="card">1 a N</td><td><code>acceso.usuario_id</code></td><td>Sí, cuando alguien escribe un usuario que <b>no existe</b>: se guarda igual, sin enlace.</td></tr>
-          <tr><td><b>USUARIO</b> hace <b>CAMBIOS</b> (auditoría)<br><span class="muted">Quién hizo cada cambio.</span></td><td class="card">1 a N</td><td><code>auditoria.actor_id</code></td><td>Sí, cuando el cambio lo hizo <b>el sistema</b> (bloqueo automático).</td></tr>
-          <tr><td><b>EMPRESA</b> marca su <b>SEGUIMIENTO</b><br><span class="muted">Su avance y sus votos.</span></td><td class="card">1 a N</td><td><code>seguimiento.empresa_id</code></td><td>No. Es obligatorio y parte de la clave.</td></tr>
-          <tr><td><b>USUARIO</b> actualiza <b>SEGUIMIENTO</b><br><span class="muted">Quién marcó cada cosa.</span></td><td class="card">1 a N</td><td><code>seguimiento.actualizado_por</code></td><td>Sí (dato informativo).</td></tr>
-          <tr><td><b>AUDITORIA</b> es sobre un <b>USUARIO o una EMPRESA</b></td><td class="card">N a 1</td><td><code>objetivo_tipo</code> + <code>objetivo_id</code></td><td>Sin enlace fijo, porque puede ser de dos tablas. Se guarda el nombre como foto 📸.</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 7. NORMALIZACIÓN ============ -->
-<section class="pagina">
-  <span class="chip azul">Datos sin repetir</span>
-  <h2>Cómo nos aseguramos de no repetir datos</h2>
-  <p class="bajada" style="margin-bottom:4mm">El modelo está <b>normalizado</b>: cada dato se guarda en un solo lugar y las tablas se conectan por sus claves. Además, la propia base controla reglas para que no entren datos repetidos o inválidos.</p>
-  <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:8mm">
-    <div>
-      <div class="punto"><div class="nro">1</div><div><b>Cada cosa se guarda una sola vez</b><p>Los datos de una tienda están solo en EMPRESA. Sus usuarios no copian el nombre de la tienda: guardan su código en <code>empresa_id</code>. Si la tienda cambia de nombre, se cambia en un solo lugar.</p></div></div>
-      <div class="punto"><div class="nro">2</div><div><b>Toda fila se identifica con una clave 🔑</b><p>Las 5 tablas tienen clave primaria. SEGUIMIENTO usa una <b>clave doble</b> (empresa + recomendación): es imposible que una empresa tenga dos filas, o dos votos, para la misma recomendación.</p></div></div>
-      <div class="punto"><div class="nro">3</div><div><b>Un dato por campo, sin listas adentro</b><p>Cada intento de acceso, cambio o voto es <b>una fila nueva</b>, no una lista guardada dentro del usuario o la empresa.</p></div></div>
-      <div class="punto"><div class="nro">4</div><div><b>No se guarda lo que se puede calcular</b><p>El avance ("3 de 10 hechas"), la cantidad de 👍 o los intentos fallidos del día se calculan contando filas. Así nunca quedan desactualizados.</p></div></div>
-      <div class="punto"><div class="nro">5</div><div><b>Nada se borra</b><p>Las empresas se dan de baja y los usuarios se bloquean (<code>activa</code> / <code>activo</code> en "no"). Así los enlaces nunca quedan apuntando a algo que no existe y no se pierde el historial.</p></div></div>
-      <div class="punto" style="margin-bottom:0"><div class="nro">📸</div><div><b>Copias a propósito, justificadas</b><p><code>acceso.usuario_ingresado</code> (lo que escribió, aunque no exista), <code>auditoria.actor_usuario</code> y <code>objetivo_nombre</code> (el registro histórico no tiene que cambiar si se renombra algo), y <code>empresa.credencial_email</code> (se muestra sin desencriptar la KEY).</p></div></div>
-    </div>
-    <div>
-      <div class="tarjeta">
-        <h3>Reglas que controla la base (no deja guardar si no se cumplen)</h3>
-        <table class="reglas">
-          <tr><td>usuario.usuario</td><td><b>Único</b> y siempre en minúsculas: no puede haber dos usuarios con el mismo nombre, ni "Alan" y "alan".</td></tr>
-          <tr><td>usuario.rol + empresa_id</td><td>Un <b>cliente siempre</b> tiene empresa; un <b>admin nunca</b>.</td></tr>
-          <tr><td>usuario.rol</td><td>Solo <code>admin</code> o <code>cliente</code>.</td></tr>
-          <tr><td>empresa.fuente_tipo</td><td>Solo <code>ga4</code> o <code>thelook</code>.</td></tr>
-          <tr><td>empresa.web</td><td>Tiene que ser una dirección web válida (http/https).</td></tr>
-          <tr><td>seguimiento (clave)</td><td>Una sola fila por empresa y recomendación.</td></tr>
-          <tr><td>seguimiento.estado</td><td>Solo pendiente, en curso o hecha.</td></tr>
-          <tr><td>seguimiento.voto</td><td>Solo 1 (👍) o -1 (👎).</td></tr>
-          <tr><td>seguimiento.recomendacion_id</td><td>Solo minúsculas, números y guiones.</td></tr>
-          <tr><td>auditoria.objetivo_tipo</td><td>Solo <code>usuario</code> o <code>empresa</code>.</td></tr>
-          <tr><td>todos los enlaces 🔗</td><td>Tienen que apuntar a una fila que exista (integridad referencial).</td></tr>
-        </table>
-      </div>
-      <div class="tarjeta gris" style="margin-top:4mm;padding:3mm 4mm">
-        <p style="font-size:8.3pt"><b>¿Y <code>fuente_config</code> en JSON?</b> Cada tipo de fuente necesita datos distintos para ubicar sus tablas en BigQuery. Un campo JSON evita una columna vacía por cada tipo, sin repetir información.</p>
-      </div>
-    </div>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 8. EJEMPLO ============ -->
-<section class="pagina">
-  <span class="chip azul">Returnly · con datos de ejemplo</span>
-  <h2>Un ejemplo para entender cómo se conectan</h2>
-  <p class="bajada" style="margin-bottom:4mm">Los colores muestran el enlace: el <span class="c1">código de la empresa</span> aparece en sus usuarios y en su seguimiento, y el <span class="c2">código del usuario</span> en sus accesos y en la auditoría. (Códigos uuid acortados para que se lea.)</p>
-  <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:7mm">
-    <div>
-      <p class="ej-tit">EMPRESA</p>
-      <table class="ej">
-        <tr><th>id 🔑</th><th>nombre</th><th>fuente_tipo</th><th>activa</th></tr>
-        <tr><td><span class="c1">google-merch</span></td><td>Google Merchandise Store</td><td>ga4</td><td>sí</td></tr>
-        <tr><td>thelook</td><td>TheLook (tienda de ropa)</td><td>thelook</td><td>sí</td></tr>
-      </table>
-      <p class="ej-tit" style="margin-top:5mm">USUARIO</p>
-      <table class="ej">
-        <tr><th>id 🔑</th><th>usuario</th><th>rol</th><th>empresa_id 🔗</th><th>activo</th></tr>
-        <tr><td><span class="c2">7f3a…</span></td><td>google</td><td>cliente</td><td><span class="c1">google-merch</span></td><td>sí</td></tr>
-        <tr><td>2b91…</td><td>thelook</td><td>cliente</td><td>thelook</td><td>sí</td></tr>
-        <tr><td>c04e…</td><td>admin</td><td>admin</td><td><span class="vacio">vacío</span></td><td>sí</td></tr>
-      </table>
-      <p class="ej-tit" style="margin-top:5mm">SEGUIMIENTO</p>
-      <table class="ej">
-        <tr><th>empresa_id 🔑🔗</th><th>recomendacion_id 🔑</th><th>estado</th><th>voto</th><th>actualizado_por 🔗</th></tr>
-        <tr><td><span class="c1">google-merch</span></td><td>perdemos</td><td>en_curso</td><td>👍 1</td><td><span class="c2">7f3a…</span></td></tr>
-        <tr><td><span class="c1">google-merch</span></td><td>destacar</td><td>hecha</td><td><span class="vacio">vacío</span></td><td><span class="c2">7f3a…</span></td></tr>
-      </table>
-    </div>
-    <div>
-      <p class="ej-tit">ACCESO</p>
-      <table class="ej">
-        <tr><th>id 🔑</th><th>usuario_id 🔗</th><th>usuario_ingresado</th><th>exito</th><th>motivo</th></tr>
-        <tr><td>101</td><td><span class="c2">7f3a…</span></td><td>google</td><td>no</td><td>contraseña incorrecta</td></tr>
-        <tr><td>102</td><td><span class="c2">7f3a…</span></td><td>google</td><td>sí</td><td>ok</td></tr>
-        <tr><td>103</td><td><span class="vacio">vacío</span></td><td>gogle</td><td>no</td><td>usuario inexistente</td></tr>
-      </table>
-      <p class="ej-tit" style="margin-top:5mm">AUDITORIA</p>
-      <table class="ej">
-        <tr><th>actor_id 🔗</th><th>actor_usuario 📸</th><th>accion</th><th>objetivo</th><th>detalle</th></tr>
-        <tr><td><span class="vacio">vacío</span></td><td>sistema</td><td>Bloqueo automático</td><td>usuario · prueba1</td><td>5 intentos fallidos seguidos</td></tr>
-        <tr><td>c04e…</td><td>admin</td><td>Desbloqueó al usuario</td><td>usuario · prueba1</td><td>Estaba bloqueado por intentos fallidos</td></tr>
-        <tr><td>c04e…</td><td>admin</td><td>Editó la empresa</td><td>empresa · <span class="c1">google-merch</span></td><td>Cambió: nota</td></tr>
-      </table>
-      <div class="frase" style="margin-top:5mm">
-        <h3>Cómo se lee</h3>
-        <p>El usuario <b>google</b> es de <b>Google Merchandise Store</b> (por su <code>empresa_id</code>). Falló una vez y después entró. Marcó "¿Dónde perdemos ventas?" como <b>en curso</b> y le dio 👍. Alguien escribió "gogle", que no existe: quedó registrado sin enlace. El <b>admin</b> no tiene empresa porque es de Returnly.</p>
-      </div>
-    </div>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
-
-<!-- ============ 9. SEGURIDAD Y CAMBIOS ============ -->
-<section class="pagina">
-  <span class="chip azul">Seguridad y cambios</span>
-  <h2>Cómo se protege la base, y qué cambió desde el MER anterior</h2>
-  <div class="grilla3" style="margin-top:4mm;grid-template-columns:1fr 1fr 1.05fr">
-    <div class="tarjeta">
-      <h3>🔒 Quién puede entrar a la base</h3>
-      <p style="font-size:8.6pt">Las 5 tablas tienen <b>seguridad por fila (RLS)</b> activada <b>sin ningún permiso público</b>: con la clave pública de Supabase no se puede leer ni escribir nada.</p>
-      <p style="font-size:8.6pt;margin-top:2mm">Solo el <b>servidor de Returnly</b> entra, con una clave secreta guardada en Vercel, y antes de cada consulta verifica quién es el usuario y qué puede ver.</p>
-      <p style="font-size:8.6pt;margin-top:2mm">Lo único público es la función <code>ping()</code>, que devuelve la hora. La usa una tarea diaria de GitHub para que el proyecto no se pause.</p>
-    </div>
-    <div class="tarjeta">
-      <h3>🛡 Datos sensibles</h3>
-      <p style="font-size:8.6pt"><b>Contraseñas:</b> solo su hash (scrypt), nunca la real.</p>
-      <p style="font-size:8.6pt;margin-top:2mm"><b>KEY de Google:</b> encriptada (AES-256-GCM). La clave para desencriptarla no está en la base: está en Vercel.</p>
-      <p style="font-size:8.6pt;margin-top:2mm"><b>Sesiones:</b> no hay tabla de sesiones. Viajan en una cookie firmada que dura 8 horas como máximo y se cierra a los 30 minutos sin uso.</p>
-      <p style="font-size:8.6pt;margin-top:2mm"><b>Índices:</b> en <code>acceso(fecha)</code>, <code>acceso(usuario_id)</code>, <code>usuario(empresa_id)</code> y <code>auditoria(fecha)</code>, para que los registros carguen rápido.</p>
-    </div>
-    <div class="tarjeta">
-      <h3>🔄 Cambios desde el MER anterior</h3>
-      <ul class="lista-cambios">
-        <li><span class="tag mas">Nueva</span><span><b>AUDITORIA</b>: quién cambió qué y cuándo.</span></li>
-        <li><span class="tag mas">Nueva</span><span><b>SEGUIMIENTO</b>: avance y 👍/👎 de cada recomendación.</span></li>
-        <li><span class="tag cambio">Cambio</span><span><b>USUARIO</b> suma <code>intentos_fallidos</code>, <code>bloqueado_por_intentos</code> y <code>bloqueado_hasta</code> (bloqueo a los 5 intentos).</span></li>
-        <li><span class="tag menos">Fuera</span><span><b>TRAMA</b> (la tienda de prueba) y sus tablas: Returnly no la usa.</span></li>
-        <li><span class="tag menos">Fuera</span><span><b>motivo</b>: era de la idea vieja de devoluciones.</span></li>
-        <li><span class="tag menos">Fuera</span><span><b>feedback_ia</b>: la IA no se incorporó.</span></li>
-      </ul>
-    </div>
-  </div>
-  <div class="frase" style="margin-top:6mm">
-    <h3>En una frase</h3>
-    <p>La base de Returnly guarda <b>quién puede entrar y a qué tienda</b> (EMPRESA, USUARIO), <b>todo lo que pasa en materia de seguridad</b> (ACCESO, AUDITORIA) y <b>qué hace cada empresa con su feedback</b> (SEGUIMIENTO). El comportamiento de los clientes de cada tienda vive en su BigQuery: Returnly lo lee, no lo copia.</p>
-  </div>
-  <div class="pie">MER · Returnly</div>
-</section>
+</div>
 
 <script>
-// Dibuja las líneas del diagrama entre el enlace 🔗 y la clave 🔑 a la que apunta
+const NS = 'http://www.w3.org/2000/svg'
+const AZUL = '#1f5fbf'
+function el(svg, tag, attrs) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e }
+
+// Marcas de pata de gallo en el extremo (x, y) de una línea horizontal. dir = +1 si la línea sale hacia la derecha.
+function marca(svg, x, y, dir, tipo) {
+  const p = (d) => x + dir * d
+  const L = (x1, y1, x2, y2) => el(svg, 'line', { x1, y1, x2, y2, stroke: AZUL, 'stroke-width': 1.6 })
+  const circ = (cx) => el(svg, 'circle', { cx, cy: y, r: 3.6, fill: '#fff', stroke: AZUL, 'stroke-width': 1.5 })
+  L(x, y, p(20), y)
+  if (tipo === '11') { L(p(6), y - 6, p(6), y + 6); L(p(11), y - 6, p(11), y + 6) }
+  if (tipo === '01') { L(p(6), y - 6, p(6), y + 6); circ(p(14)) }
+  if (tipo === '0n') { L(x, y - 6, p(9), y); L(x, y + 6, p(9), y); circ(p(14)) }
+  return p(20)
+}
+function etiqueta(svg, x, y, texto, sub) {
+  const w = Math.max(texto.length, sub.length) * 5.1 + 14
+  el(svg, 'rect', { x: x - w / 2, y: y - 13, width: w, height: 26, rx: 5, fill: '#fff', stroke: AZUL, 'stroke-width': 1 })
+  const t = el(svg, 'text', { x, y: y - 2, 'text-anchor': 'middle', 'font-size': 9.5, 'font-weight': 700, fill: AZUL, 'font-family': 'Inter' }); t.textContent = texto
+  const s = el(svg, 'text', { x, y: y + 9, 'text-anchor': 'middle', 'font-size': 7.5, fill: '#5d6673', 'font-family': 'DejaVu Sans Mono' }); s.textContent = sub
+}
+
 function dibujar() {
-  const cont = document.getElementById('diagrama')
-  const svg = document.getElementById('lineas')
-  const base = cont.getBoundingClientRect()
-  const r = (campo) => { const e = document.querySelector(`[data-campo="${campo}"]`).getBoundingClientRect(); return { izq: e.left - base.left, der: e.right - base.left, y: e.top - base.top + e.height / 2 } }
-  const NS = 'http://www.w3.org/2000/svg'
-  const add = (tag, attrs, texto) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); if (texto) el.textContent = texto; svg.appendChild(el); return el }
-  const badge = (x, y, t) => { add('circle', { cx: x, cy: y, r: 8.5, fill: '#2b6fd6' }); add('text', { x, y: y + 3.6, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: '#fff', 'font-family': 'Inter' }, t) }
-  const etiqueta = (x, y, t) => {
-    const w = t.length * 5.6 + 16
-    add('rect', { x: x - w / 2, y: y - 9, width: w, height: 18, rx: 9, fill: '#fff', stroke: '#2b6fd6', 'stroke-width': 1.1 })
-    add('text', { x, y: y + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#2b6fd6', 'font-family': 'Inter', 'font-weight': 600 }, t)
+  const cont = document.getElementById('diagrama'), svg = document.getElementById('lineas'), base = cont.getBoundingClientRect()
+  const pos = (c) => { const r = document.querySelector(`[data-c="${c}"]`).getBoundingClientRect(); return { izq: r.left - base.left, der: r.right - base.left, y: r.top - base.top + r.height / 2 } }
+  // Une el extremo A (con su marca) y el extremo B (con su marca) con una curva; lado: 'izq' o 'der' de cada fila
+  function rel({ a, ladoA, marcaA, b, ladoB, marcaB, punteada, texto, sub, etq, ctrl }) {
+    const A = pos(a), B = pos(b)
+    const xa = ladoA === 'izq' ? A.izq : A.der, xb = ladoB === 'izq' ? B.izq : B.der
+    const da = ladoA === 'izq' ? -1 : 1, db = ladoB === 'izq' ? -1 : 1
+    const sa = marca(svg, xa, A.y, da, marcaA), sb = marca(svg, xb, B.y, db, marcaB)
+    const [c1x, c2x] = ctrl ?? [(sa + sb) / 2, (sa + sb) / 2]
+    el(svg, 'path', { d: `M ${sa} ${A.y} C ${c1x} ${A.y}, ${c2x} ${B.y}, ${sb} ${B.y}`, fill: 'none', stroke: AZUL, 'stroke-width': punteada ? 1.5 : 1.8, 'stroke-dasharray': punteada ? '6 4' : '' })
+    etiqueta(svg, etq[0], etq[1], texto, sub)
   }
-  // desde (lado "muchos", con el enlace) hasta (lado "uno", con la clave)
-  const linea = (d, punteada, pts, tEtiq, posEtiq) => {
-    add('path', { d, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 1.6, 'stroke-dasharray': punteada ? '5 4' : '' })
-    badge(pts.n[0], pts.n[1], 'N'); badge(pts.uno[0], pts.uno[1], '1')
-    etiqueta(posEtiq[0], posEtiq[1], tEtiq)
+  const P = (c) => pos(c)
+  // empresa 0..1 — 0..N usuario
+  { const a = P('usuario.empresa_id'), b = P('empresa.id')
+    rel({ a: 'usuario.empresa_id', ladoA: 'izq', marcaA: '0n', b: 'empresa.id', ladoB: 'der', marcaB: '01', punteada: true, texto: 'tiene', sub: '0..1 ── 0..N', etq: [(a.izq + b.der) / 2, (a.y + b.y) / 2 + 4] }) }
+  // usuario 0..1 — 0..N acceso
+  { const a = P('acceso.usuario_id'), b = P('usuario.id')
+    rel({ a: 'acceso.usuario_id', ladoA: 'izq', marcaA: '0n', b: 'usuario.id', ladoB: 'der', marcaB: '01', punteada: true, texto: 'registra', sub: '0..1 ── 0..N', etq: [(a.izq + b.der) / 2, b.y - 14] }) }
+  // usuario 0..1 — 0..N auditoria (actor)
+  { const a = P('auditoria.actor_id'), b = P('usuario.id'), xm = (a.izq + b.der) / 2
+    rel({ a: 'auditoria.actor_id', ladoA: 'izq', marcaA: '0n', b: 'usuario.id', ladoB: 'der', marcaB: '01', punteada: true, texto: 'realiza', sub: '0..1 ── 0..N', etq: [xm, (a.y + b.y) / 2 + 40], ctrl: [xm - 8, xm + 8] }) }
+  // empresa 1..1 — 0..N seguimiento (identificatoria)
+  { const a = P('seguimiento.empresa_id'), b = P('empresa.id'), xl = Math.min(a.izq, b.izq) - 60
+    rel({ a: 'seguimiento.empresa_id', ladoA: 'izq', marcaA: '0n', b: 'empresa.id', ladoB: 'izq', marcaB: '11', punteada: false, texto: 'tiene', sub: '1..1 ── 0..N', etq: [xl + 6, (a.y + b.y) / 2], ctrl: [xl, xl] }) }
+  // usuario 0..1 — 0..N seguimiento (quién actualizó)
+  { const a = P('seguimiento.actualizado_por'), b = P('usuario.id')
+    rel({ a: 'seguimiento.actualizado_por', ladoA: 'der', marcaA: '0n', b: 'usuario.id', ladoB: 'izq', marcaB: '01', punteada: true, texto: 'actualiza', sub: '0..1 ── 0..N', etq: [(a.der + b.izq) / 2 + 2, (a.y + b.y) / 2 + 30], ctrl: [(a.der + b.izq) / 2 + 30, b.izq - 60] }) }
+
+  // Leyenda
+  for (const [id, tipo] of [['ley-11', '11'], ['ley-01', '01'], ['ley-0n', '0n']]) {
+    const s = document.querySelector(`#${id} svg`)
+    marca(s, 4, 10, 1, tipo); el(s, 'line', { x1: 24, y1: 10, x2: 58, y2: 10, stroke: AZUL, 'stroke-width': 1.6 })
   }
-  // 1) usuario.empresa_id (izq. de USUARIO) -> empresa.id (der. de EMPRESA) · opcional (admins)
-  { const a = r('usuario.empresa_id'), b = r('empresa.id'); const x1 = a.izq - 9, x2 = b.der + 9, xm = (x1 + x2) / 2
-    linea(`M ${x1} ${a.y} C ${xm} ${a.y}, ${xm} ${b.y}, ${x2} ${b.y}`, true, { n: [x1, a.y], uno: [x2, b.y] }, 'tiene', [xm, (a.y + b.y) / 2]) }
-  // 2) acceso.usuario_id (izq. de ACCESO) -> usuario.id (der. de USUARIO) · opcional
-  { const a = r('acceso.usuario_id'), b = r('usuario.id'); const x1 = a.izq - 9, x2 = b.der + 9, xm = (x1 + x2) / 2
-    linea(`M ${x1} ${a.y} C ${xm} ${a.y}, ${xm} ${b.y}, ${x2} ${b.y}`, true, { n: [x1, a.y], uno: [x2, b.y] }, 'registra', [xm, (a.y + b.y) / 2 + 2]) }
-  // 3) auditoria.actor_id (izq. de AUDITORIA) -> usuario.id (der. de USUARIO) · opcional (sistema)
-  { const a = r('auditoria.actor_id'), b = r('usuario.id'); const x1 = a.izq - 9, x2 = b.der + 9, xm = (x1 + x2) / 2
-    add('path', { d: `M ${x1} ${a.y} C ${xm} ${a.y}, ${xm} ${b.y + 14}, ${x2} ${b.y}`, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 1.6, 'stroke-dasharray': '5 4' })
-    badge(x1, a.y, 'N'); etiqueta(xm, a.y - 34, 'hace cambios') }
-  // 4) seguimiento.empresa_id (izq. de SEGUIMIENTO) -> empresa.id (izq. de EMPRESA) · obligatorio, por el margen izquierdo
-  { const a = r('seguimiento.empresa_id'), b = r('empresa.id'); const x1 = a.izq - 9, x2 = b.izq - 9, xl = Math.min(x1, x2) - 14
-    linea(`M ${x1} ${a.y} C ${xl} ${a.y}, ${xl} ${b.y}, ${x2} ${b.y}`, false, { n: [x1, a.y], uno: [x2, b.y] }, 'marca', [xl + 2, (a.y + b.y) / 2]) }
-  // 5) seguimiento.actualizado_por (der. de SEGUIMIENTO) -> usuario.id (izq. de USUARIO) · opcional
-  { const a = r('seguimiento.actualizado_por'), b = r('usuario.id'); const x1 = a.der + 9, x2 = b.izq - 9, xm = (x1 + x2) / 2
-    add('path', { d: `M ${x1} ${a.y} C ${xm + 6} ${a.y}, ${x2 - 22} ${b.y + 40}, ${x2} ${b.y}`, fill: 'none', stroke: '#2b6fd6', 'stroke-width': 1.6, 'stroke-dasharray': '5 4' })
-    badge(x1, a.y, 'N'); badge(x2, b.y, '1'); etiqueta(xm + 4, a.y - 26, 'actualiza') }
 }
 document.fonts.ready.then(() => { dibujar(); document.body.dataset.listo = '1' })
 </script>
