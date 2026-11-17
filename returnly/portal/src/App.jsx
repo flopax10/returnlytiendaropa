@@ -6,6 +6,7 @@ import Ingresar from './pages/Ingresar.jsx'
 import Panel from './pages/Panel.jsx'
 import Admin from './pages/Admin.jsx'
 import Inactividad from './components/Inactividad.jsx'
+import NuevaVersion from './components/NuevaVersion.jsx'
 
 // Flujo:
 // - sin sesión -> pantalla de ingreso
@@ -68,9 +69,10 @@ export default function App() {
   const volverAlAdmin = sesion?.usuario.rol === 'admin' ? () => { setEmpresaVista(null); setPanel(null) } : null
 
   if (sesion === undefined) return null
-  if (!sesion) return <Ingresar onIngreso={entrar} aviso={avisoIngreso} />
+  if (!sesion) return <><NuevaVersion conSesion={false} /><Ingresar onIngreso={entrar} aviso={avisoIngreso} /></>
   return (
     <>
+      <NuevaVersion conSesion />
       <Inactividad onCerrar={cerrarSesion} />
       {contenido()}
     </>

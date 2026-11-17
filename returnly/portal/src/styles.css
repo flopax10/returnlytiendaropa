@@ -308,3 +308,12 @@ label.boton-vista { display: inline-block; }
 .avance-hechas { background: #2f855a; transition: width .3s; }
 .avance-curso { background: #d69e2e; transition: width .3s; }
 .avance-ayuda { margin: 0; font-size: .8rem; }
+
+/* ---- Aviso de versión nueva ---- */
+.aviso-version {
+  position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 60;
+  width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid #2f855a;
+  border-radius: 10px; padding: 12px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+}
+.aviso-version p { margin: 0; flex: 1 1 260px; line-height: 1.45; }
