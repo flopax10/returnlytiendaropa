@@ -50,7 +50,6 @@ Navegador ──> Portal (React + Vite, Vercel)
 | [`returnly/backend`](returnly/backend) | API de Returnly. Su [README](returnly/backend/README.md) detalla roles, seguridad y rutas |
 | [`returnly/supabase`](returnly/supabase) | SQL de las tablas de Supabase, en orden |
 | [`returnly/docs`](returnly/docs) | Documentación: [modelo entidad-relación (MER)](returnly/docs/MER-Returnly.pdf) |
-| [`tienda`](tienda) | **TRAMA**, tienda de ropa de demostración que hace de "retailer". Ver su [README](tienda/README.md) |
 | [`.github/workflows`](.github/workflows) | Tarea diaria que mantiene activo el proyecto de Supabase |
 
 ## Datos de las empresas de ejemplo
