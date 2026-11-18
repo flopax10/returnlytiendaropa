@@ -9,7 +9,7 @@ con datos reales.
 | **Para qué** | Programar y probar mientras se hace un cambio | Probar el cambio terminado, como lo vería un cliente, antes de publicarlo | Lo que usan los clientes de verdad |
 | **Quién lo usa** | Cada integrante, en su compu | El equipo (y el docente, para revisar) | Las empresas clientes y el equipo de Returnly |
 | **Código** | Cualquier rama, en la compu | Rama **`qa`** de GitHub | Rama **`main`** de GitHub |
-| **Pantallas** | `localhost:5174` (`npm run dev`) | https://returnly-portal-qa.vercel.app | https://returnly-portal-flo-e232.vercel.app |
+| **Pantallas** | `localhost:5174` (`npm run dev`) | https://returnly-portal-qa.vercel.app | https://returnly-portal.vercel.app |
 | **Backend** | `localhost:3002` (`npm start`) | https://returnly-backend-qa.vercel.app | https://returnly-backend.vercel.app |
 | **Base de datos** | Supabase **returnly-qa** (nunca la de producción) | Supabase **returnly-qa** | Supabase **Returnly** (producción) |
 | **Datos** | De prueba | De prueba (usuario `admin.qa`, empresas de prueba) | Reales |

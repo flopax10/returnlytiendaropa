@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      WEB: https://returnly-portal-flo-e232.vercel.app
+      WEB: https://returnly-portal.vercel.app
     steps:
       - name: La web carga (Vercel)
         run: |
