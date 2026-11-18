@@ -4,7 +4,7 @@ import { hashPassword, verificarPassword, iniciarSesion, cerrarSesion, requiereS
 import {
   usuarioParaLogin, actualizarUsuario, empresaPorId, publicaEmpresa, registrarAcceso,
   sumarIntentoFallido, limpiarIntentos, bloqueoTemporalVigente, MAX_INTENTOS, MINUTOS_BLOQUEO_ADMIN, registrarAuditoria,
-  seguimientoDe, guardarSeguimiento,
+  seguimientoDe, guardarSeguimiento, baseResponde,
 } from './empresas.js';
 import { obtenerDatos } from './datos.js';
 import { panelDeEmpresa } from './negocio/index.js';
@@ -16,7 +16,17 @@ const app = express();
 app.set('trust proxy', 1); // en Vercel, para que req.ip sea la IP real
 app.use(express.json());
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+// Estado del servicio (lo usa el monitor de disponibilidad): responde 200 si el backend Y la base funcionan,
+// y 503 si la base no responde (por ejemplo, si Supabase se pausó o está caído). No devuelve ningún dato.
+app.get('/api/health', async (_req, res) => {
+  try {
+    await baseResponde();
+    res.json({ ok: true, base: 'ok' });
+  } catch (e) {
+    console.error('Health: la base no responde', e.message);
+    res.status(503).json({ ok: false, base: 'no responde' });
+  }
+});
 
 // Lo que el navegador sabe del usuario logueado (sin contraseña) y, si es cliente, de su empresa
 async function sesionPublica(usuario) {

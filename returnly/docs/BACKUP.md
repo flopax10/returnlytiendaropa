@@ -16,7 +16,7 @@ Este documento define **qué se respalda, cada cuánto, dónde, cómo se protege
 **Criticidad: media.** Objetivos:
 
 - **RPO** (cuántos datos podemos perder como máximo): **24 horas**, porque hay un backup por día.
-- **RTO** (en cuánto tiempo volvemos a funcionar): **menos de 2 horas** siguiendo la sección 5.
+- **RTO** (en cuánto tiempo volvemos a funcionar): **menos de 2 horas** siguiendo la sección 6.
 
 ## 2. Qué se respalda de cada pieza
 
@@ -58,7 +58,43 @@ Este documento define **qué se respalda, cada cuánto, dónde, cómo se protege
 Hoy Returnly cumple: la base en Supabase, el backup en GitHub y el código en GitHub y en la compu de cada integrante.
 Con Supabase Pro y la copia inmutable, además, una copia queda imposible de borrar.
 
-## 5. Cómo restaurar (paso a paso)
+## 5. Disponibilidad
+
+**Disponibilidad** es que Returnly esté funcionando cuando alguien lo quiere usar. El backup sirve para *recuperar*
+datos; la disponibilidad, para *no caerse* (y enterarse rápido si se cae).
+
+### Qué pasa si se cae cada pieza
+
+| Pieza | Dónde corre | Qué tan disponible es | Si se cae… | Qué tenemos |
+|---|---|---|---|---|
+| **Pantallas** (portal) | Red mundial de Vercel (CDN) | Muy alta: los archivos se sirven desde el punto de la red más cercano a quien entra | No carga la web | Se vuelve a publicar desde GitHub en 1–2 min. Vercel guarda todas las versiones: se puede volver a una anterior con **Promote**. |
+| **Backend** | Funciones de Vercel, 1 región (Washington, EE. UU.) | Alta: redundancia entre zonas dentro de la región | Se puede entrar a la web pero no iniciar sesión ni ver datos | Igual que el portal: republicar o volver a una versión anterior. |
+| **Base de datos** | Supabase, 1 región (Canadá) | Media: un solo servidor; el plan gratis **se pausa** tras una semana sin uso | Nadie puede iniciar sesión | Tarea diaria que evita la pausa ([`mantener-supabase.yml`](../../.github/workflows/mantener-supabase.yml)) y backup diario verificado (sección 3). |
+| **Datos de BigQuery** | Google | Muy alta (servicio de Google) | El panel de esa empresa no carga datos nuevos | Mientras dure la copia temporal (caché) de la última consulta, el panel se sigue viendo. |
+| **Código** | GitHub + compu de cada integrante | Muy alta | No se pueden publicar cambios | Cualquier copia local alcanza para recrear todo. |
+
+**Punto único de falla:** la base de datos (una sola región, plan gratis). Es lo primero a mejorar si crece.
+
+### Cómo nos enteramos si se cae
+
+[`monitor.yml`](../../.github/workflows/monitor.yml) revisa **cada 30 minutos** que respondan la web y `/api/health`
+(que pasa por el backend y **consulta la base**). Si algo falla, GitHub manda un mail. El historial queda en
+**Actions → Monitor de disponibilidad**, y sirve para medir cuánto estuvo disponible Returnly en un período.
+
+**Objetivo para la criticidad actual (media):** estar disponible el **99 %** del tiempo (hasta ~7 horas de caída por mes),
+volviendo a funcionar en menos de 2 horas (RTO).
+
+### Cómo mejorarla si crece
+
+| Mejora | Para qué |
+|---|---|
+| **Supabase Pro** | El proyecto no se pausa nunca y tiene backups administrados. |
+| **Backend en la región de la base** (Montreal, `yul1`, en lugar de Washington) | Menos demora en cada consulta a la base. Es un cambio de configuración en Vercel. |
+| **Vercel Pro**: regiones de respaldo para el backend | Si se cae la región de Washington, las funciones siguen en otra. |
+| **Réplica de la base en otra región** (Supabase) | Si se cae la región de Canadá, hay una copia lista para leer. |
+| **Monitor externo** (ej. UptimeRobot, gratis) con página de estado pública | Aviso en minutos (no cada 30) y una página para que los clientes vean si hay problemas. |
+
+## 6. Cómo restaurar (paso a paso)
 
 1. **Elegir el backup:** en GitHub → **Actions** → *Backup de la base* → la ejecución del día que se quiere → **Artifacts** → descargar `returnly-base-AAAA-MM-DD_HHMM` (trae el `.dump.gpg` y el `.sha256`).
 2. **Comprobar que no se modificó:** `sha256sum -c returnly-base-….sha256`.
@@ -77,7 +113,7 @@ Con Supabase Pro y la copia inmutable, además, una copia queda imposible de bor
 **Prueba de restauración:** se hace sola todos los días (paso 3 de la tarea). Además, una vez por semestre el equipo
 hace el procedimiento completo a mano en un proyecto de prueba de Supabase y anota cuánto tardó (RTO real).
 
-## 6. Configuración (una sola vez)
+## 7. Configuración (una sola vez)
 
 En GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**:
 

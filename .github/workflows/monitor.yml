@@ -1,0 +1,34 @@
+# Monitor de disponibilidad de Returnly (producción).
+# Cada 30 minutos revisa que respondan: la web (pantallas en Vercel) y /api/health, que pasa por el backend y
+# consulta la base de Supabase. Si algo no responde, la tarea falla y GitHub avisa por mail.
+# Historial: pestaña Actions -> "Monitor de disponibilidad". Detalle en returnly/docs/BACKUP.md (Disponibilidad).
+name: Monitor de disponibilidad
+
+on:
+  schedule:
+    - cron: '7,37 * * * *' # cada 30 minutos
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WEB: https://returnly-portal-flo-e232.vercel.app
+    steps:
+      - name: La web carga (Vercel)
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 --retry 2 --retry-delay 10 "$WEB/")
+          echo "Web: HTTP $code"
+          [ "$code" = 200 ] || { echo "::error::La web no responde (HTTP $code)"; exit 1; }
+
+      - name: El backend y la base responden (/api/health)
+        run: |
+          resp=$(curl -s -w '\n%{http_code}' --max-time 30 --retry 2 --retry-delay 15 "$WEB/api/health")
+          code=$(echo "$resp" | tail -1); cuerpo=$(echo "$resp" | head -1)
+          echo "Backend: HTTP $code · $cuerpo"
+          [ "$code" = 200 ] || { echo "::error::El backend o la base no responden (HTTP $code: $cuerpo)"; exit 1; }
+          echo "✅ Returnly disponible: web, backend y base responden." >> "$GITHUB_STEP_SUMMARY"
