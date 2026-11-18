@@ -145,3 +145,6 @@ export async function resumenSeguimiento() {
   }
   return resumen;
 }
+
+// ---- Estado de la base (para /api/health): una consulta mínima, sin traer datos ----
+export const baseResponde = () => q(db.from('empresa').select('id', { head: true, count: 'exact' }).limit(1));
