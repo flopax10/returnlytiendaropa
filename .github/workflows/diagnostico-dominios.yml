@@ -1,0 +1,11 @@
+name: Diagnóstico de dominios (temporal)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in https://returnly-portal-flo-e232.vercel.app/ https://returnly-portal.vercel.app/ https://returnly-portal.vercel.app/api/health https://returnly-portal-qa.vercel.app/ https://returnly-portal-qa.vercel.app/api/health; do
+            echo "== $u"; curl -s -o /tmp/b -D - --max-time 20 "$u" | grep -iE "^HTTP|^location|^x-vercel-id|^set-cookie: _vercel" | head -4; head -c 160 /tmp/b; echo; done
