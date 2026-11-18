@@ -5,7 +5,7 @@ Cada empresa entra con su usuario y ve dashboards y feedback calculados con **su
 (embudo de compra, productos, canales, dispositivos, países). El equipo de Returnly administra las empresas, los
 usuarios y la seguridad desde una pantalla de Admin.
 
-🔗 **Web publicada:** https://returnly-portal-flo-e232.vercel.app
+🔗 **Web publicada:** https://returnly-portal.vercel.app
 
 Proyecto obligatorio en grupo. Usa **GitHub** (código), **Supabase** (base de datos) y **Vercel** (publicación).
 
@@ -93,7 +93,7 @@ npm run dev               # http://localhost:5174
 |---|---|---|---|
 | **DEV** | cualquiera, en la compu | `localhost:5174` | Supabase *returnly-qa* |
 | **QA** | `qa` | https://returnly-portal-qa.vercel.app | Supabase *returnly-qa* |
-| **PROD** | `main` | https://returnly-portal-flo-e232.vercel.app | Supabase *Returnly* |
+| **PROD** | `main` | https://returnly-portal.vercel.app | Supabase *Returnly* |
 
 Un cambio pasa de DEV → QA (push a `qa`) → PROD (pull request `qa` → `main`). Detalle en
 [`returnly/docs/AMBIENTES.md`](returnly/docs/AMBIENTES.md).
