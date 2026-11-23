@@ -147,6 +147,14 @@ app.get('/api/datos', requiereSesion, async (req, res) => {
   const empresa = id && await empresaPorId(String(id));
   if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
   if (!empresa.activa && req.usuario.rol !== 'admin') return res.status(403).json({ error: 'Tu empresa está dada de baja' });
+  // Empresa recién creada, todavía sin su KEY de Google: se avisa claro en vez de un error genérico
+  if (!empresa.credencial_cifrada) {
+    return res.status(409).json({
+      error: req.usuario.rol === 'admin'
+        ? `${empresa.nombre} todavía no tiene cargada su KEY de Google. Cargala en Admin → Empresas para ver sus datos.`
+        : 'Tu empresa todavía no tiene conectados sus datos de Google. Pedile a Returnly que los configure.',
+    });
+  }
   const { actualizado, datos } = await obtenerDatos(empresa);
   // El navegador recibe los resultados ya calculados (métricas y recomendaciones), no los datos crudos
   res.json({ empresa: publicaEmpresa(empresa), actualizado, ...panelDeEmpresa(datos) });
